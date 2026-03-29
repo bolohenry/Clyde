@@ -52,9 +52,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     });
   };
 
+  const isWelcome = message.id === "welcome-msg";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={isWelcome ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
