@@ -5,7 +5,7 @@ const CASUAL_MARKERS = [
   "yeah", "yep", "nah", "nope", "tbh", "imo", "idk", "omg",
   "btw", "rn", "tho", "u ", "ur ", "thx", "ty", "np",
   "cool", "dope", "chill", "sick", "bro", "dude", "yo ",
-  "ain't", "y'all", "gonna", "tryna", "finna",
+  "ain't", "y'all", "tryna", "finna",
 ];
 
 const FORMAL_MARKERS = [

@@ -43,6 +43,12 @@ export function conversationReducer(
         turnCount: state.turnCount + 1,
       };
 
+    case "SET_TURN_COUNT":
+      return {
+        ...state,
+        turnCount: action.count,
+      };
+
     case "ADD_CONTEXT":
       return {
         ...state,

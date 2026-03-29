@@ -133,7 +133,7 @@ export default function Chat() {
           {/* Phase 3: Full chat mode */}
           {uiPhase === "chat" && (
             <>
-              <div className="space-y-4 pt-1">
+              <div className="space-y-4 pt-1" role="log" aria-label="Conversation with Clyde" aria-live="polite">
                 {state.messages.map((message) => (
                   <ChatMessage key={message.id} message={message} />
                 ))}

@@ -74,6 +74,7 @@ export type ChatAction =
   | { type: "UPDATE_MESSAGE"; id: string; updates: Partial<Message> }
   | { type: "SET_PHASE"; phase: ConversationPhase }
   | { type: "INCREMENT_TURN" }
+  | { type: "SET_TURN_COUNT"; count: number }
   | { type: "ADD_CONTEXT"; context: string }
   | { type: "SET_TONE"; tone: ConversationTone }
   | { type: "SELECT_ACTION"; action: SuggestionType }

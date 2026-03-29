@@ -18,7 +18,6 @@ import { analyzeTone } from "@/engine/tone";
 import { extractUserContext, shouldTransition } from "@/engine/transitions";
 import {
   generateConversationResponse,
-  generateExplanation,
   generateStructuredOutput,
 } from "@/engine/responses";
 
@@ -103,15 +102,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         newState.phase = "conversation";
       }
 
-      // In flexible mode, keep responding conversationally
+      // In non-conversation phases, respond conversationally with a fresh turn count
       if (
         state.phase === "flexible" ||
         state.phase === "explanation" ||
-        state.phase === "structured"
+        state.phase === "structured" ||
+        state.phase === "transition"
       ) {
         newState.phase = "conversation";
         newState.turnCount = 1;
         dispatch({ type: "SET_PHASE", phase: "conversation" });
+        dispatch({ type: "SET_TURN_COUNT", count: 1 });
         dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
         dispatch({ type: "SHOW_EXPLANATION", show: false });
       }

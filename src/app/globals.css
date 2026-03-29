@@ -29,10 +29,6 @@ html, body {
   overflow: hidden;
 }
 
-#__next {
-  height: 100%;
-}
-
 /* Selection color */
 ::selection {
   background: rgba(12, 135, 240, 0.15);

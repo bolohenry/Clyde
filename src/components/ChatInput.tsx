@@ -55,7 +55,10 @@ export default function ChatInput() {
       case "conversation":
         return "Keep going — I'm listening...";
       case "transition":
+      case "structured":
         return "Say more, or pick an option above...";
+      case "explanation":
+        return "Type to continue, or explore above...";
       case "flexible":
         return "What else can I help with?";
       default:
@@ -89,6 +92,7 @@ export default function ChatInput() {
             placeholder={placeholderText()}
             disabled={isWaitingForResponse}
             rows={1}
+            aria-label="Message to Clyde"
             className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 placeholder-surface-400
               bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50
               py-0.5"
@@ -96,6 +100,7 @@ export default function ChatInput() {
           <button
             onClick={handleSubmit}
             disabled={!text.trim() || isWaitingForResponse}
+            aria-label="Send message"
             className="flex-shrink-0 w-8 h-8 rounded-full bg-clyde-500 text-white
               flex items-center justify-center hover:bg-clyde-600 active:scale-95
               disabled:opacity-25 disabled:hover:bg-clyde-500 transition-all duration-150"
@@ -109,6 +114,7 @@ export default function ChatInput() {
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
