@@ -5,26 +5,38 @@ import { motion } from "framer-motion";
 import TypingIndicator from "./TypingIndicator";
 import ActionChips from "./ActionChips";
 import StructuredOutput from "./StructuredOutput";
+import ClydeAvatar from "./ClydeAvatar";
+import { useChatContext } from "@/context/ChatContext";
 
 interface ChatMessageProps {
   message: Message;
 }
 
+function getClydeExpression(phase: string, isTyping?: boolean): "neutral" | "thinking" | "happy" | "excited" {
+  if (isTyping) return "thinking";
+  if (phase === "structured" || phase === "explanation") return "happy";
+  if (phase === "flexible") return "excited";
+  return "neutral";
+}
+
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isClyde = message.role === "clyde";
+  const { state } = useChatContext();
+  const expression = getClydeExpression(state.phase, message.isTyping);
 
   if (message.isTyping) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-start gap-2.5 sm:gap-3"
+        className="flex items-end gap-2 sm:gap-2.5"
       >
-        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-clyde-400 to-clyde-600 flex items-center justify-center shadow-sm">
-          <span className="text-white text-[10px] sm:text-xs font-bold">C</span>
-        </div>
-        <div className="bg-white rounded-2xl rounded-tl-md border border-surface-200 shadow-sm">
-          <TypingIndicator />
+        <ClydeAvatar size="sm" expression="thinking" />
+        <div className="relative">
+          <div className="bg-white rounded-2xl rounded-bl-md border border-surface-200 shadow-sm">
+            <TypingIndicator />
+          </div>
+          <SpeechTail side="left" />
         </div>
       </motion.div>
     );
@@ -60,27 +72,30 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div
-        className={`flex items-start gap-2.5 sm:gap-3 ${
-          isClyde ? "" : "flex-row-reverse"
-        }`}
-      >
-        {isClyde && (
-          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-clyde-400 to-clyde-600 flex items-center justify-center shadow-sm">
-            <span className="text-white text-[10px] sm:text-xs font-bold">C</span>
+      {isClyde ? (
+        <div className="flex items-end gap-2 sm:gap-2.5">
+          <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
+          <div className="relative max-w-[82%] sm:max-w-[78%]">
+            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white border border-surface-200 shadow-sm">
+              <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700">
+                {renderText(message.text)}
+              </span>
+            </div>
+            <SpeechTail side="left" />
           </div>
-        )}
-
-        <div
-          className={`max-w-[85%] sm:max-w-[80%] px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl text-[15px] sm:text-sm leading-relaxed ${
-            isClyde
-              ? "bg-white border border-surface-200 shadow-sm rounded-tl-md text-surface-700"
-              : "bg-clyde-500 text-white rounded-tr-md shadow-sm"
-          }`}
-        >
-          {renderText(message.text)}
         </div>
-      </div>
+      ) : (
+        <div className="flex items-end gap-2 sm:gap-2.5 justify-end">
+          <div className="relative max-w-[82%] sm:max-w-[78%]">
+            <div className="px-4 py-3 rounded-2xl rounded-br-md bg-clyde-500 shadow-sm">
+              <span className="text-[15px] sm:text-sm leading-relaxed text-white">
+                {renderText(message.text)}
+              </span>
+            </div>
+            <SpeechTail side="right" />
+          </div>
+        </div>
+      )}
 
       {message.chips && message.chips.length > 0 && (
         <ActionChips chips={message.chips} />
@@ -88,5 +103,46 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
       {message.structured && <StructuredOutput content={message.structured} />}
     </motion.div>
+  );
+}
+
+function SpeechTail({ side }: { side: "left" | "right" }) {
+  if (side === "left") {
+    return (
+      <svg
+        className="absolute -bottom-[1px] -left-[6px] w-4 h-3"
+        viewBox="0 0 16 12"
+        fill="none"
+      >
+        <path
+          d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
+          fill="white"
+        />
+        <path
+          d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
+          stroke="#e7e5e4"
+          strokeWidth="1"
+          fill="none"
+          clipPath="inset(0 0 0 0)"
+        />
+        <path
+          d="M16 1 C16 1 9 1 5 4.5 C1.5 7.5 1 11 1 11 C1 11 4.5 7.5 8.5 5.5 C12.5 3.5 16 2 16 1Z"
+          fill="white"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      className="absolute -bottom-[1px] -right-[6px] w-4 h-3"
+      viewBox="0 0 16 12"
+      fill="none"
+    >
+      <path
+        d="M0 0 C0 0 8 0 12 4 C16 8 16 12 16 12 C16 12 12 8 8 6 C4 4 0 2 0 0Z"
+        fill="#0c87f0"
+      />
+    </svg>
   );
 }

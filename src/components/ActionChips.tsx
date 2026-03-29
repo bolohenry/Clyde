@@ -16,7 +16,7 @@ export default function ActionChips({ chips }: ActionChipsProps) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.15 }}
-      className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 ml-9 sm:ml-11"
+      className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 ml-11 sm:ml-[52px]"
     >
       {chips.map((chip, i) => (
         <motion.button

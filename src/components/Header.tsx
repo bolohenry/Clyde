@@ -3,6 +3,7 @@
 import { useChatContext } from "@/context/ChatContext";
 import { ConversationPhase } from "@/types";
 import { motion } from "framer-motion";
+import ClydeAvatar from "./ClydeAvatar";
 
 const PROGRESS_STEPS = 4;
 
@@ -13,7 +14,6 @@ function phaseToProgress(phase: ConversationPhase): number {
     case "conversation":
       return 0;
     case "transition":
-      return 1;
     case "structured":
       return 1;
     case "learn":
@@ -26,18 +26,29 @@ function phaseToProgress(phase: ConversationPhase): number {
   }
 }
 
+function phaseToExpression(phase: ConversationPhase): "neutral" | "thinking" | "happy" | "excited" {
+  switch (phase) {
+    case "structured":
+    case "explanation":
+      return "happy";
+    case "flexible":
+      return "excited";
+    default:
+      return "neutral";
+  }
+}
+
 export default function Header() {
   const { state } = useChatContext();
   const showProgress = state.phase !== "welcome";
   const currentIndex = phaseToProgress(state.phase);
+  const expression = phaseToExpression(state.phase);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-surface-100">
       <div className="max-w-2xl mx-auto px-3 sm:px-4 h-12 sm:h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-clyde-400 to-clyde-600 flex items-center justify-center shadow-sm">
-            <span className="text-white text-xs sm:text-sm font-bold">C</span>
-          </div>
+        <div className="flex items-center gap-2">
+          <ClydeAvatar size="sm" expression={expression} animate={false} />
           <span className="text-base sm:text-lg font-semibold text-surface-800 tracking-tight">
             Clyde
           </span>

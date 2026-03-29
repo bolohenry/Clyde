@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import ClydeAvatar from "./ClydeAvatar";
 
 interface TypewriterMessageProps {
   text: string;
@@ -45,25 +46,40 @@ export default function TypewriterMessage({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex items-start gap-2.5 sm:gap-3"
+      className="flex items-end gap-2 sm:gap-2.5"
     >
-      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-clyde-400 to-clyde-600 flex items-center justify-center shadow-sm">
-        <span className="text-white text-[10px] sm:text-xs font-bold" aria-hidden="true">C</span>
-      </div>
-      <div
-        className="max-w-[85%] sm:max-w-[80%] px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl rounded-tl-md bg-white border border-surface-200 shadow-sm"
-        role="status"
-        aria-label="Clyde is typing a message"
-      >
-        <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700">
-          {displayedText}
-          {!isComplete && (
-            <span
-              className="inline-block w-0.5 h-4 bg-clyde-400 ml-0.5 animate-pulse align-text-bottom"
-              aria-hidden="true"
-            />
-          )}
-        </span>
+      <ClydeAvatar size="sm" expression="neutral" />
+      <div className="relative max-w-[82%] sm:max-w-[78%]">
+        <div
+          className="px-4 py-3 rounded-2xl rounded-bl-md bg-white border border-surface-200 shadow-sm"
+          role="status"
+          aria-label="Clyde is typing a message"
+        >
+          <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700">
+            {displayedText}
+            {!isComplete && (
+              <span
+                className="inline-block w-0.5 h-4 bg-clyde-400 ml-0.5 animate-pulse align-text-bottom"
+                aria-hidden="true"
+              />
+            )}
+          </span>
+        </div>
+        {/* Speech tail */}
+        <svg
+          className="absolute -bottom-[1px] -left-[6px] w-4 h-3"
+          viewBox="0 0 16 12"
+          fill="none"
+        >
+          <path
+            d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
+            fill="white"
+          />
+          <path
+            d="M16 1 C16 1 9 1 5 4.5 C1.5 7.5 1 11 1 11 C1 11 4.5 7.5 8.5 5.5 C12.5 3.5 16 2 16 1Z"
+            fill="white"
+          />
+        </svg>
       </div>
     </motion.div>
   );

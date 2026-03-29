@@ -25,7 +25,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
-      className="mt-3 ml-9 sm:ml-11 mr-1 sm:mr-4 rounded-xl border border-surface-200 bg-white shadow-sm overflow-hidden"
+      className="mt-3 ml-11 sm:ml-[52px] mr-1 sm:mr-4 rounded-xl border border-surface-200 bg-white shadow-sm overflow-hidden"
     >
       <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-surface-50/80 border-b border-surface-100">
         <h3 className="text-[13px] sm:text-sm font-semibold text-surface-700">
