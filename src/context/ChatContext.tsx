@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import {
   ChatAction,
-  ConversationPhase,
   ConversationState,
   Message,
   SuggestionType,
@@ -21,7 +20,6 @@ import {
   generateConversationResponse,
   generateExplanation,
   generateStructuredOutput,
-  generateWelcomeMessage,
 } from "@/engine/responses";
 
 interface ChatContextValue {
@@ -49,13 +47,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       };
       dispatch({ type: "ADD_MESSAGE", message: typingMsg });
 
+      const actualDelay = delay + Math.random() * 500;
       setTimeout(() => {
         dispatch({
           type: "UPDATE_MESSAGE",
           id: message.id,
-          updates: { text: message.text, isTyping: false, chips: message.chips, structured: message.structured },
+          updates: {
+            text: message.text,
+            isTyping: false,
+            chips: message.chips,
+            structured: message.structured,
+          },
         });
-      }, delay + Math.random() * 600);
+      }, actualDelay);
     },
     [dispatch]
   );
@@ -75,7 +79,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "INCREMENT_TURN" });
 
       const contexts = extractUserContext(userMessage);
-      contexts.forEach((ctx) => dispatch({ type: "ADD_CONTEXT", context: ctx }));
+      contexts.forEach((ctx) =>
+        dispatch({ type: "ADD_CONTEXT", context: ctx })
+      );
 
       const userMessages = [
         ...state.messages.filter((m) => m.role === "user").map((m) => m.text),
@@ -97,8 +103,24 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         newState.phase = "conversation";
       }
 
+      // In flexible mode, keep responding conversationally
+      if (
+        state.phase === "flexible" ||
+        state.phase === "explanation" ||
+        state.phase === "structured"
+      ) {
+        newState.phase = "conversation";
+        newState.turnCount = 1;
+        dispatch({ type: "SET_PHASE", phase: "conversation" });
+        dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
+        dispatch({ type: "SHOW_EXPLANATION", show: false });
+      }
+
       setTimeout(() => {
-        if (shouldTransition(newState) && newState.phase === "conversation") {
+        if (
+          shouldTransition(newState) &&
+          newState.phase === "conversation"
+        ) {
           dispatch({ type: "SET_PHASE", phase: "transition" });
           const response = generateConversationResponse(newState);
           simulateTyping(response, 1000);
@@ -145,18 +167,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "SHOW_EXPLANATION", show: true });
 
     setTimeout(() => {
-      const explanation = generateExplanation(state);
-      simulateTyping(explanation, 1000);
-
-      setTimeout(() => {
-        dispatch({ type: "COMPLETE_FIRST_FLOW" });
-      }, 2000);
+      dispatch({ type: "COMPLETE_FIRST_FLOW" });
     }, 300);
-  }, [state, dispatch, simulateTyping]);
+  }, [dispatch]);
 
   const tryAnotherUseCase = useCallback(() => {
     dispatch({ type: "SET_PHASE", phase: "flexible" });
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
+    dispatch({ type: "SHOW_EXPLANATION", show: false });
     dispatch({ type: "COMPLETE_FIRST_FLOW" });
 
     const msg: Message = {

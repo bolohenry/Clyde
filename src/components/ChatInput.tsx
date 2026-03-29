@@ -9,18 +9,20 @@ export default function ChatInput() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage, state } = useChatContext();
 
-  const isDisabled =
-    state.phase === "explanation" && state.explanationVisible;
+  const isWaitingForResponse = state.messages.some((m) => m.isTyping);
 
   useEffect(() => {
-    if (inputRef.current && !isDisabled) {
-      inputRef.current.focus();
+    if (inputRef.current && !isWaitingForResponse) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 200);
+      return () => clearTimeout(timer);
     }
-  }, [state.messages.length, isDisabled]);
+  }, [state.messages.length, isWaitingForResponse]);
 
   const handleSubmit = () => {
     const trimmed = text.trim();
-    if (!trimmed || isDisabled) return;
+    if (!trimmed || isWaitingForResponse) return;
     sendMessage(trimmed);
     setText("");
     if (inputRef.current) {
@@ -46,6 +48,7 @@ export default function ChatInput() {
   };
 
   const placeholderText = () => {
+    if (isWaitingForResponse) return "Clyde is thinking...";
     switch (state.phase) {
       case "welcome":
         return "Tell me what you have going on...";
@@ -62,13 +65,21 @@ export default function ChatInput() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.2 }}
-      className="sticky bottom-0 bg-gradient-to-t from-surface-50 via-surface-50 to-transparent pt-4 pb-4 px-4"
+      transition={{ duration: 0.4, delay: 0.3 }}
+      className="flex-shrink-0 bg-gradient-to-t from-surface-50 via-surface-50/95 to-surface-50/0 pt-3 pb-3 sm:pb-4 px-3 sm:px-4"
     >
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-end gap-2 bg-white rounded-2xl border border-surface-200 shadow-sm px-4 py-2.5 focus-within:border-clyde-300 focus-within:shadow-md transition-all duration-200">
+        <div
+          className={`flex items-end gap-2 bg-white rounded-2xl border shadow-sm
+            px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200
+            ${
+              isWaitingForResponse
+                ? "border-surface-200 opacity-75"
+                : "border-surface-200 focus-within:border-clyde-300 focus-within:shadow-md"
+            }`}
+        >
           <textarea
             ref={inputRef}
             value={text}
@@ -76,21 +87,22 @@ export default function ChatInput() {
             onKeyDown={handleKeyDown}
             onInput={handleInput}
             placeholder={placeholderText()}
-            disabled={isDisabled}
+            disabled={isWaitingForResponse}
             rows={1}
-            className="flex-1 resize-none text-sm text-surface-800 placeholder-surface-400
-              bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50"
+            className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 placeholder-surface-400
+              bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50
+              py-0.5"
           />
           <button
             onClick={handleSubmit}
-            disabled={!text.trim() || isDisabled}
+            disabled={!text.trim() || isWaitingForResponse}
             className="flex-shrink-0 w-8 h-8 rounded-full bg-clyde-500 text-white
               flex items-center justify-center hover:bg-clyde-600 active:scale-95
-              disabled:opacity-30 disabled:hover:bg-clyde-500 transition-all duration-150"
+              disabled:opacity-25 disabled:hover:bg-clyde-500 transition-all duration-150"
           >
             <svg
-              width="16"
-              height="16"
+              width="15"
+              height="15"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -103,8 +115,8 @@ export default function ChatInput() {
             </svg>
           </button>
         </div>
-        <p className="text-center text-xs text-surface-400 mt-2">
-          Clyde helps you learn AI by doing real things — no experience needed.
+        <p className="text-center text-[11px] sm:text-xs text-surface-400 mt-1.5 sm:mt-2">
+          Clyde helps you learn AI by doing real things — no experience needed
         </p>
       </div>
     </motion.div>
