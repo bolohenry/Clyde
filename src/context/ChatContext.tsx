@@ -442,7 +442,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        if (llmAvailableRef.current !== false) return;
+        // onError callback may have set this to false — re-check
+        if ((llmAvailableRef.current as boolean | null) !== false) return;
       }
 
       // Fallback to mocked
@@ -509,7 +510,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (llmAvailableRef.current !== false) return;
+      // onError callback may have set this to false — re-check
+      if ((llmAvailableRef.current as boolean | null) !== false) return;
     }
 
     setTimeout(() => {
