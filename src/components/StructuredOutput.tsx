@@ -84,7 +84,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
           {content.title}
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {typeof navigator !== "undefined" && navigator.share ? (
+          {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
             <button
               onClick={handleShare}
               aria-label="Share"
