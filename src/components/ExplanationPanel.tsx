@@ -115,7 +115,7 @@ export default function ExplanationPanel() {
                 className="pt-1 border-t border-[var(--surface-border)]"
               >
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-600 mb-2">
-                  What you've tried
+                  What you&apos;ve tried
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_USE_CASES.map((uc) => {
@@ -141,7 +141,7 @@ export default function ExplanationPanel() {
                 </div>
                 {tried.length >= 3 && (
                   <p className="text-[11px] text-surface-400 dark:text-surface-600 mt-2">
-                    You're building a real AI habit. Most people never get this far.
+                    You&apos;re building a real AI habit. Most people never get this far.
                   </p>
                 )}
               </motion.div>
