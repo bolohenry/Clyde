@@ -7,19 +7,61 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://clyde.vercel.app";
+
 export const metadata: Metadata = {
-  title: "Clyde — Learn AI by doing real things",
+  title: {
+    default: "Clyde — Learn AI by doing real things",
+    template: "%s | Clyde",
+  },
   description:
     "Clyde helps you learn how to use AI by applying it to your real life. No lectures, no blank prompts — just useful help starting from your actual day.",
+  metadataBase: new URL(APP_URL),
+  openGraph: {
+    title: "Clyde — Learn AI by doing real things",
+    description:
+      "Tell Clyde what's on your mind. He turns your messy thoughts into plans, to-dos, drafts, and decisions — and teaches you AI along the way.",
+    url: APP_URL,
+    siteName: "Clyde",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Clyde — Learn AI by doing real things",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Clyde — Learn AI by doing real things",
+    description:
+      "Tell Clyde what's on your mind. He turns your messy thoughts into plans, to-dos, and drafts — and teaches you AI along the way.",
+    images: ["/og-image.png"],
+  },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230c87f0'/><text y='.9em' x='50' text-anchor='middle' font-size='60' font-family='system-ui' font-weight='bold' fill='white'>C</text></svg>",
+    icon: [
+      { url: "/favicon-v2.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Clyde",
   },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: "#fafaf9",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -29,7 +71,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="min-h-screen bg-surface-50 antialiased">{children}</body>
+      <body className="min-h-screen bg-[var(--surface-page)] antialiased">{children}</body>
     </html>
   );
 }

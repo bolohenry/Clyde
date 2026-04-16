@@ -40,6 +40,9 @@ export interface Message {
   chips?: ActionChip[];
   structured?: StructuredContent;
   isTyping?: boolean;
+  isError?: boolean;
+  errorCode?: "rate_limit" | "llm_error" | "network" | "no_api_key";
+  isInsight?: boolean; // renders as a centered callout, not a speech bubble
 }
 
 export type ConversationPhase =
@@ -67,6 +70,8 @@ export interface ConversationState {
   showTransitionCue: boolean;
   explanationVisible: boolean;
   hasCompletedFirstFlow: boolean;
+  triedUseCases: SuggestionType[];   // ordered list of completed use cases
+  totalFlowsCompleted: number;       // how many full use-case flows done
 }
 
 export type ChatAction =
@@ -81,4 +86,6 @@ export type ChatAction =
   | { type: "SHOW_TRANSITION_CUE"; show: boolean }
   | { type: "SHOW_EXPLANATION"; show: boolean }
   | { type: "COMPLETE_FIRST_FLOW" }
+  | { type: "COMPLETE_USE_CASE"; action: SuggestionType }
+  | { type: "INCREMENT_FLOWS" }
   | { type: "RESET" };

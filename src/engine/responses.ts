@@ -52,75 +52,47 @@ function generateFirstFollowUp(
   const prefix = getTonePrefix(tone);
   const punct = tone.formality === "casual" ? " —" : ".";
 
-  if (contexts.includes("event planning")) {
-    return makeClydeMessage(
-      `${prefix}${punct} what kind of event? and roughly how far out is it?`,
-      getChipsForContext("event planning")
-    );
-  }
-  if (contexts.includes("work task")) {
-    return makeClydeMessage(
-      `${prefix}${punct} what's the main thing you need to get done? like, what would make today feel productive?`,
-      getChipsForContext("work task")
-    );
-  }
-  if (contexts.includes("travel planning")) {
-    return makeClydeMessage(
-      `${prefix}${punct} where are you headed? and are you still in the planning stage or more like packing-stage?`,
-      getChipsForContext("travel planning")
-    );
-  }
-  if (contexts.includes("purchase decision")) {
-    return makeClydeMessage(
-      `${prefix}${punct} what are you looking at buying? do you already have some options in mind or starting from scratch?`,
-      getChipsForContext("purchase decision")
-    );
-  }
-  if (contexts.includes("communication")) {
-    return makeClydeMessage(
-      `${prefix}${punct} who are you writing to, and what's the vibe? like, is it a tricky message or more routine?`,
-      getChipsForContext("communication")
-    );
-  }
-  if (contexts.includes("meal planning")) {
-    return makeClydeMessage(
-      `${prefix}${punct} are you planning for tonight or more like the whole week? and any constraints — picky eaters, budget, time?`,
-      getChipsForContext("meal planning")
-    );
-  }
-  if (contexts.includes("family logistics")) {
-    return makeClydeMessage(
-      `${prefix}${punct} how old are the kids? and what's the main thing you're juggling right now?`,
-      getChipsForContext("family logistics")
-    );
-  }
-  if (contexts.includes("financial planning")) {
-    return makeClydeMessage(
-      `${prefix}${punct} what's the money situation about — are you trying to save, budget, or figure out a specific cost?`,
-      getChipsForContext("financial planning")
-    );
-  }
-  if (contexts.includes("scheduling")) {
-    return makeClydeMessage(
-      `${prefix}${punct} what all do you need to fit in? give me the rough list and I can help you sort it out.`,
-      getChipsForContext("scheduling")
-    );
-  }
-  if (contexts.includes("decision making")) {
-    return makeClydeMessage(
-      `${prefix}${punct} what's the decision? and what's making it hard — too many options, not enough info, or something else?`,
-      getChipsForContext("decision making")
-    );
+  // Only fire context-specific follow-ups when the user is clearly asking for help,
+  // not just mentioning something in passing. Check for intent signals.
+  const hasHelpIntent = /\b(help|need|want|how|plan|make|figure|sort|decide|stuck|unsure|trying)\b/.test(userText);
+
+  if (hasHelpIntent) {
+    if (contexts.includes("event planning")) {
+      return makeClydeMessage(
+        `${prefix}${punct} what kind of event? and roughly how far out is it?`
+      );
+    }
+    if (contexts.includes("work task")) {
+      return makeClydeMessage(
+        `${prefix}${punct} what's the main thing you need to get done?`
+      );
+    }
+    if (contexts.includes("travel planning")) {
+      return makeClydeMessage(
+        `${prefix}${punct} where are you headed? still in the planning stage or more like packing-stage?`
+      );
+    }
+    if (contexts.includes("purchase decision")) {
+      return makeClydeMessage(
+        `${prefix}${punct} what are you looking at buying? do you have some options already or starting from scratch?`
+      );
+    }
+    if (contexts.includes("decision making")) {
+      return makeClydeMessage(
+        `${prefix}${punct} what's the decision? what's making it hard?`
+      );
+    }
   }
 
-  return makeClydeMessage(
-    `${prefix}${punct} tell me a little more — what's the main thing on your mind with that?`,
-    [
-      { id: "chip-plan", label: "Make a plan", type: "plan", icon: "📋" },
-      { id: "chip-breakdown", label: "Break it down", type: "breakdown", icon: "🔍" },
-      { id: "chip-next", label: "Figure out next steps", type: "next-steps", icon: "➡️" },
-    ]
-  );
+  // Neutral, open follow-up that doesn't assume they want help
+  const openFollowUps = [
+    `${prefix}${punct} what else is going on today?`,
+    `${prefix}${punct} anything on your plate that's been nagging at you?`,
+    `${prefix}${punct} how's everything else going?`,
+    `${prefix}${punct} what's the rest of your day looking like?`,
+  ];
+  const pick = openFollowUps[Math.floor(Math.random() * openFollowUps.length)];
+  return makeClydeMessage(pick);
 }
 
 function generateSecondFollowUp(

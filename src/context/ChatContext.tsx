@@ -6,6 +6,7 @@ import React, {
   useContext,
   useReducer,
   useRef,
+  useState,
 } from "react";
 import {
   ChatAction,
@@ -21,6 +22,7 @@ import {
   generateStructuredOutput,
 } from "@/engine/responses";
 import { parseResponse } from "@/engine/parser";
+import { usePersistence, loadPersistedState, clearPersistedState } from "@/hooks/usePersistence";
 
 interface ChatContextValue {
   state: ConversationState;
@@ -30,6 +32,11 @@ interface ChatContextValue {
   showExplanation: () => void;
   tryAnotherUseCase: () => void;
   startFreeform: () => void;
+  retryLastMessage: () => void;
+  resetConversation: () => void;
+  hasSavedConversation: boolean;
+  pendingInput: string;
+  setPendingInput: (text: string) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -39,8 +46,12 @@ function nextMsgId(): string {
   return `msg-${++msgCounter}`;
 }
 
-async function callLLM(
-  history: { role: "user" | "assistant"; content: string }[]
+// Consume SSE stream from /api/chat and call onDelta for each text chunk.
+// Returns the full accumulated text, or null if LLM not available.
+async function streamLLM(
+  history: { role: "user" | "assistant"; content: string }[],
+  onDelta: (text: string) => void,
+  onError: (code: Message["errorCode"], message: string) => void
 ): Promise<string | null> {
   try {
     const res = await fetch("/api/chat", {
@@ -48,24 +59,92 @@ async function callLLM(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: history }),
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.reply || null;
+
+    if (!res.ok || !res.body) {
+      // Non-streaming error (e.g. 500 from missing API key)
+      const data = await res.json().catch(() => ({}));
+      if (data.code === "no_api_key") {
+        onError("no_api_key", ""); // triggers silent fallback
+        return null;
+      }
+      onError("llm_error", data.error || "Request failed");
+      return null;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulated = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+
+        let event: { type: string; text?: string; code?: string; message?: string };
+        try {
+          event = JSON.parse(raw);
+        } catch {
+          continue;
+        }
+
+        if (event.type === "delta" && event.text) {
+          accumulated += event.text;
+          onDelta(accumulated);
+        } else if (event.type === "error") {
+          onError(
+            (event.code as Message["errorCode"]) ?? "llm_error",
+            event.message ?? "Something went wrong."
+          );
+          return null;
+        } else if (event.type === "done") {
+          break;
+        }
+      }
+    }
+
+    return accumulated || null;
   } catch {
+    onError("network", "Network error — check your connection.");
     return null;
   }
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(conversationReducer, initialState);
+  // Lazy init — reads localStorage exactly once on mount
+  const [state, dispatch] = useReducer(conversationReducer, initialState, () => {
+    const saved = typeof window !== "undefined" ? loadPersistedState() : null;
+    return saved ?? initialState;
+  });
+  // Computed once: did we restore a previous conversation on mount?
+  const [hasSavedConversation] = useState(
+    () =>
+      typeof window !== "undefined"
+        ? (loadPersistedState()?.messages?.length ?? 0) > 0
+        : false
+  );
+  const [pendingInput, setPendingInput] = useState("");
+  usePersistence(state);
   const processingRef = useRef(false);
   const llmAvailableRef = useRef<boolean | null>(null);
+  // Store last user message text + history for retry
+  const lastUserMsgRef = useRef<string | null>(null);
+  const lastHistoryRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
+  const lastReplyIdRef = useRef<string | null>(null);
 
   const getConversationHistory = useCallback(
     (extraUserMsg?: string) => {
       const history: { role: "user" | "assistant"; content: string }[] = [];
       for (const m of state.messages) {
-        if (m.isTyping) continue;
+        if (m.isTyping || m.isError) continue;
         if (m.role === "clyde") {
           history.push({ role: "assistant", content: m.text });
         } else {
@@ -105,6 +184,83 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [dispatch]
   );
 
+  const setMessageError = useCallback(
+    (id: string, code: Message["errorCode"], message: string) => {
+      dispatch({
+        type: "UPDATE_MESSAGE",
+        id,
+        updates: { text: message, isTyping: false, isError: true, errorCode: code },
+      });
+    },
+    [dispatch]
+  );
+
+  // Core reply logic: try streaming LLM, fall back to mock
+  const generateReply = useCallback(
+    async (
+      replyId: string,
+      history: { role: "user" | "assistant"; content: string }[],
+      currentState: ConversationState
+    ) => {
+      const llmResult = await streamLLM(
+        history,
+        (accumulated) => {
+          // Stream each delta into the message
+          dispatch({
+            type: "UPDATE_MESSAGE",
+            id: replyId,
+            updates: { text: accumulated, isTyping: false },
+          });
+        },
+        (code, message) => {
+          // No API key = silent fallback, other errors = show error state
+          if (code === "no_api_key" || code === undefined) {
+            llmAvailableRef.current = false;
+          } else {
+            setMessageError(replyId, code, message);
+            processingRef.current = false;
+          }
+        }
+      );
+
+      if (llmResult) {
+        llmAvailableRef.current = true;
+        const parsed = parseResponse(llmResult);
+        finishMessage(replyId, parsed.text, { structured: parsed.structured });
+
+        if (parsed.structured) {
+          dispatch({ type: "SET_PHASE", phase: "structured" });
+          setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 2000);
+        } else if (shouldTransition(currentState)) {
+          dispatch({ type: "SET_PHASE", phase: "transition" });
+          setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 1500);
+        }
+        processingRef.current = false;
+        return;
+      }
+
+      if (llmAvailableRef.current === false) {
+        // Use mocked fallback
+        setTimeout(() => {
+          if (shouldTransition(currentState) && currentState.phase === "conversation") {
+            dispatch({ type: "SET_PHASE", phase: "transition" });
+            const response = generateConversationResponse(currentState);
+            finishMessage(replyId, response.text, { chips: response.chips });
+            setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 1500);
+          } else {
+            const response = generateConversationResponse(currentState);
+            finishMessage(replyId, response.text, { chips: response.chips });
+          }
+          processingRef.current = false;
+        }, 800 + Math.random() * 500);
+      } else {
+        // Error was shown — don't keep processing flag locked
+        processingRef.current = false;
+      }
+    },
+    [dispatch, finishMessage, setMessageError]
+  );
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (processingRef.current) return;
@@ -120,9 +276,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "INCREMENT_TURN" });
 
       const contexts = extractUserContext(userMessage);
-      contexts.forEach((ctx) =>
-        dispatch({ type: "ADD_CONTEXT", context: ctx })
-      );
+      contexts.forEach((ctx) => dispatch({ type: "ADD_CONTEXT", context: ctx }));
 
       const userMessages = [
         ...state.messages.filter((m) => m.role === "user").map((m) => m.text),
@@ -148,78 +302,76 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       const replyId = nextMsgId();
+      lastReplyIdRef.current = replyId;
       addTypingMessage(replyId);
 
-      // Try LLM first
       const history = getConversationHistory(text);
-      const llmReply = await callLLM(history);
+      lastUserMsgRef.current = text;
+      lastHistoryRef.current = history;
 
-      if (llmReply) {
-        llmAvailableRef.current = true;
-        const parsed = parseResponse(llmReply);
-        finishMessage(replyId, parsed.text, {
-          structured: parsed.structured,
-        });
+      const newTurnCount = state.turnCount + 1;
+      const projectedState: ConversationState = {
+        ...state,
+        messages: [...state.messages, userMessage],
+        turnCount: newTurnCount,
+        userContext: [...new Set([...state.userContext, ...contexts])],
+        detectedTone: tone,
+        phase: "conversation",
+      };
 
-        // Check if we should show transition cue
-        const newTurnCount = state.turnCount + 1;
-        const newState: ConversationState = {
-          ...state,
-          messages: [...state.messages, userMessage],
-          turnCount: newTurnCount,
-          userContext: [...new Set([...state.userContext, ...contexts])],
-          detectedTone: tone,
-          phase: "conversation",
-        };
-
-        if (parsed.structured) {
-          dispatch({ type: "SET_PHASE", phase: "structured" });
-          setTimeout(() => {
-            dispatch({ type: "SHOW_TRANSITION_CUE", show: true });
-          }, 2000);
-        } else if (shouldTransition(newState)) {
-          dispatch({ type: "SET_PHASE", phase: "transition" });
-          setTimeout(() => {
-            dispatch({ type: "SHOW_TRANSITION_CUE", show: true });
-          }, 1500);
-        }
-      } else {
-        // Fallback to mocked responses
-        llmAvailableRef.current = false;
-        const newState: ConversationState = {
-          ...state,
-          messages: [...state.messages, userMessage],
-          turnCount: state.turnCount + 1,
-          userContext: [...new Set([...state.userContext, ...contexts])],
-          detectedTone: tone,
-          phase: state.phase === "welcome" ? "conversation" : state.phase,
-        };
-
-        setTimeout(() => {
-          if (
-            shouldTransition(newState) &&
-            newState.phase === "conversation"
-          ) {
-            dispatch({ type: "SET_PHASE", phase: "transition" });
-            const response = generateConversationResponse(newState);
-            finishMessage(replyId, response.text, {
-              chips: response.chips,
-            });
-            setTimeout(() => {
-              dispatch({ type: "SHOW_TRANSITION_CUE", show: true });
-            }, 1500);
-          } else {
-            const response = generateConversationResponse(newState);
-            finishMessage(replyId, response.text, {
-              chips: response.chips,
-            });
-          }
-        }, 800 + Math.random() * 500);
-      }
-
-      processingRef.current = false;
+      await generateReply(replyId, history, projectedState);
     },
-    [state, dispatch, addTypingMessage, finishMessage, getConversationHistory]
+    [state, dispatch, addTypingMessage, getConversationHistory, generateReply]
+  );
+
+  const retryLastMessage = useCallback(async () => {
+    if (processingRef.current || !lastReplyIdRef.current) return;
+    processingRef.current = true;
+
+    const replyId = lastReplyIdRef.current;
+    // Reset error state → back to typing indicator
+    dispatch({
+      type: "UPDATE_MESSAGE",
+      id: replyId,
+      updates: { text: "", isTyping: true, isError: false, errorCode: undefined },
+    });
+
+    const projectedState: ConversationState = {
+      ...state,
+      phase: state.phase === "welcome" ? "conversation" : state.phase,
+    };
+
+    await generateReply(replyId, lastHistoryRef.current, projectedState);
+  }, [state, dispatch, generateReply]);
+
+  // Progressive insight tips — shown after the 2nd, 3rd, 4th+ use cases
+  const INSIGHT_TIPS = [
+    "Notice something? You didn't write a special prompt. Just described what was going on — that's the whole skill.",
+    "You're using AI the way it was meant to work: real context in, clear structure out. No templates needed.",
+    "Each time you do this, you're building a new reflex. Most people never figure this out.",
+  ];
+
+  const maybeInjectInsight = useCallback(
+    (useCaseIndex: number) => {
+      // useCaseIndex is the 0-based index AFTER recording this use case
+      // Show tip on 2nd (index 1), 3rd (index 2), cap at last tip
+      if (useCaseIndex < 1) return;
+      const tipIndex = Math.min(useCaseIndex - 1, INSIGHT_TIPS.length - 1);
+      const tip = INSIGHT_TIPS[tipIndex];
+      setTimeout(() => {
+        dispatch({
+          type: "ADD_MESSAGE",
+          message: {
+            id: `insight-${Date.now()}`,
+            role: "clyde",
+            text: tip,
+            timestamp: Date.now(),
+            isInsight: true,
+          },
+        });
+      }, 3200);
+    },
+    [dispatch] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const selectChipAction = useCallback(
@@ -228,10 +380,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "SET_PHASE", phase: "structured" });
       dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
 
+      // Track before the await so we capture current count
+      const useCaseIndexAfter = state.triedUseCases.includes(action)
+        ? state.triedUseCases.length
+        : state.triedUseCases.length + 1;
+
       const replyId = nextMsgId();
+      lastReplyIdRef.current = replyId;
       addTypingMessage(replyId);
 
-      if (llmAvailableRef.current) {
+      const onSuccess = (text: string, structured?: import("@/types").StructuredContent) => {
+        finishMessage(replyId, text, { structured });
+        dispatch({ type: "COMPLETE_USE_CASE", action });
+        maybeInjectInsight(useCaseIndexAfter);
+        setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 2000);
+      };
+
+      if (llmAvailableRef.current !== false) {
         const actionLabels: Record<SuggestionType, string> = {
           plan: "make a plan",
           prioritize: "help me prioritize",
@@ -245,18 +410,34 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         };
         const userRequest = actionLabels[action] || "help me with that";
         const history = getConversationHistory(userRequest);
-        const llmReply = await callLLM(history);
+        lastHistoryRef.current = history;
 
-        if (llmReply) {
-          const parsed = parseResponse(llmReply);
-          finishMessage(replyId, parsed.text, {
-            structured: parsed.structured,
-          });
-          setTimeout(() => {
-            dispatch({ type: "SHOW_TRANSITION_CUE", show: true });
-          }, 2000);
+        const llmResult = await streamLLM(
+          history,
+          (accumulated) => {
+            dispatch({
+              type: "UPDATE_MESSAGE",
+              id: replyId,
+              updates: { text: accumulated, isTyping: false },
+            });
+          },
+          (code, message) => {
+            if (code === "no_api_key") {
+              llmAvailableRef.current = false;
+            } else {
+              setMessageError(replyId, code, message);
+            }
+          }
+        );
+
+        if (llmResult) {
+          llmAvailableRef.current = true;
+          const parsed = parseResponse(llmResult);
+          onSuccess(parsed.text, parsed.structured);
           return;
         }
+
+        if (llmAvailableRef.current !== false) return;
       }
 
       // Fallback to mocked
@@ -265,15 +446,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           { ...state, selectedAction: action },
           action
         );
-        finishMessage(replyId, output.text, {
-          structured: output.structured,
-        });
-        setTimeout(() => {
-          dispatch({ type: "SHOW_TRANSITION_CUE", show: true });
-        }, 2000);
+        onSuccess(output.text, output.structured);
       }, 1200);
     },
-    [state, dispatch, addTypingMessage, finishMessage, getConversationHistory]
+    [state, dispatch, addTypingMessage, finishMessage, setMessageError, getConversationHistory, maybeInjectInsight]
   );
 
   const showExplanation = useCallback(() => {
@@ -281,6 +457,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
     dispatch({ type: "SHOW_EXPLANATION", show: true });
     dispatch({ type: "COMPLETE_FIRST_FLOW" });
+    dispatch({ type: "INCREMENT_FLOWS" });
   }, [dispatch]);
 
   const tryAnotherUseCase = useCallback(async () => {
@@ -288,22 +465,46 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
     dispatch({ type: "SHOW_EXPLANATION", show: false });
     dispatch({ type: "COMPLETE_FIRST_FLOW" });
+    dispatch({ type: "INCREMENT_FLOWS" });
 
     const replyId = nextMsgId();
+    lastReplyIdRef.current = replyId;
     addTypingMessage(replyId);
 
-    if (llmAvailableRef.current) {
+    if (llmAvailableRef.current !== false) {
       const history = getConversationHistory();
       history.push({
         role: "user",
         content:
           "[The user wants to try another use case. Invite them to tell you what else they have going on. Be warm and brief.]",
       });
-      const llmReply = await callLLM(history);
-      if (llmReply) {
-        finishMessage(replyId, llmReply.trim());
+      lastHistoryRef.current = history;
+
+      const llmResult = await streamLLM(
+        history,
+        (accumulated) => {
+          dispatch({
+            type: "UPDATE_MESSAGE",
+            id: replyId,
+            updates: { text: accumulated, isTyping: false },
+          });
+        },
+        (code, message) => {
+          if (code === "no_api_key") {
+            llmAvailableRef.current = false;
+          } else {
+            setMessageError(replyId, code, message);
+          }
+        }
+      );
+
+      if (llmResult) {
+        llmAvailableRef.current = true;
+        finishMessage(replyId, llmResult.trim());
         return;
       }
+
+      if (llmAvailableRef.current !== false) return;
     }
 
     setTimeout(() => {
@@ -312,11 +513,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         "Nice — you've got the hang of it. What else do you have going on? I can help with pretty much anything: planning, deciding, drafting, organizing, comparing options... just tell me what's on your mind."
       );
     }, 800);
-  }, [dispatch, addTypingMessage, finishMessage, getConversationHistory]);
+  }, [dispatch, addTypingMessage, finishMessage, setMessageError, getConversationHistory]);
 
   const startFreeform = useCallback(() => {
     dispatch({ type: "SET_PHASE", phase: "flexible" });
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
+  }, [dispatch]);
+
+  const resetConversation = useCallback(() => {
+    clearPersistedState();
+    dispatch({ type: "RESET" });
   }, [dispatch]);
 
   return (
@@ -329,6 +535,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         showExplanation,
         tryAnotherUseCase,
         startFreeform,
+        retryLastMessage,
+        resetConversation,
+        hasSavedConversation,
+        pendingInput,
+        setPendingInput,
       }}
     >
       {children}
