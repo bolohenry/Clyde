@@ -16,7 +16,7 @@
   --surface-border-subtle: #f0efee;
   --text-primary: #292524;
   --text-secondary: #57534e;
-  --text-muted: #a8a29e;
+  --text-muted: #78716c;
   --header-bg: rgba(255,255,255,0.9);
 
   /* Safe area insets for notched devices */
@@ -37,7 +37,7 @@
   --surface-border-subtle: #302d2b;
   --text-primary: #f5f5f4;
   --text-secondary: #d6d3d1;
-  --text-muted: #78716c;
+  --text-muted: #a8a29e;
   --header-bg: rgba(26,23,20,0.92);
 }
 

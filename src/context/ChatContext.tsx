@@ -135,6 +135,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   usePersistence(state);
   const processingRef = useRef(false);
   const llmAvailableRef = useRef<boolean | null>(null);
+  // Client-side cooldown: minimum 1.5s between sends
+  const lastSendTimeRef = useRef(0);
   // Store last user message text + history for retry
   const lastUserMsgRef = useRef<string | null>(null);
   const lastHistoryRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
@@ -264,6 +266,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const sendMessage = useCallback(
     async (text: string) => {
       if (processingRef.current) return;
+      const now = Date.now();
+      if (now - lastSendTimeRef.current < 1500) return; // 1.5s cooldown
+      lastSendTimeRef.current = now;
       processingRef.current = true;
 
       const userMessage: Message = {
