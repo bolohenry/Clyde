@@ -7,9 +7,22 @@ import { motion } from "framer-motion";
 export default function ChatInput() {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { sendMessage, state } = useChatContext();
+  const { sendMessage, state, pendingInput, setPendingInput } = useChatContext();
 
   const isWaitingForResponse = state.messages.some((m) => m.isTyping);
+
+  // Populate textarea when an example is clicked in WhatElseCanAI
+  useEffect(() => {
+    if (!pendingInput) return;
+    setText(pendingInput);
+    setPendingInput("");
+    // Resize textarea to fit
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`;
+      inputRef.current.focus();
+    }
+  }, [pendingInput, setPendingInput]);
 
   useEffect(() => {
     if (inputRef.current && !isWaitingForResponse) {
@@ -71,16 +84,17 @@ export default function ChatInput() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
-      className="flex-shrink-0 bg-gradient-to-t from-surface-50 via-surface-50/95 to-surface-50/0 pt-3 pb-3 sm:pb-4 px-3 sm:px-4"
+      className="flex-shrink-0 bg-gradient-to-t from-[var(--surface-page)] via-[var(--surface-page)]/95
+        to-transparent pt-3 pb-safe px-3 sm:px-4 transition-colors duration-200"
     >
       <div className="max-w-2xl mx-auto">
         <div
-          className={`flex items-end gap-2 bg-white rounded-2xl border shadow-sm
+          className={`flex items-end gap-2 bg-[var(--surface-card)] rounded-2xl border shadow-sm
             px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200
             ${
               isWaitingForResponse
-                ? "border-surface-200 opacity-75"
-                : "border-surface-200 focus-within:border-clyde-300 focus-within:shadow-md"
+                ? "border-[var(--surface-border)] opacity-75"
+                : "border-[var(--surface-border)] focus-within:border-clyde-300 dark:focus-within:border-clyde-700 focus-within:shadow-md"
             }`}
         >
           <textarea
@@ -93,7 +107,8 @@ export default function ChatInput() {
             disabled={isWaitingForResponse}
             rows={1}
             aria-label="Message to Clyde"
-            className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 placeholder-surface-400
+            className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 dark:text-surface-100
+              placeholder-surface-400 dark:placeholder-surface-600
               bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50
               py-0.5"
           />
@@ -101,7 +116,7 @@ export default function ChatInput() {
             onClick={handleSubmit}
             disabled={!text.trim() || isWaitingForResponse}
             aria-label="Send message"
-            className="flex-shrink-0 w-8 h-8 rounded-full bg-clyde-500 text-white
+            className="flex-shrink-0 w-11 h-11 rounded-full bg-clyde-500 text-white
               flex items-center justify-center hover:bg-clyde-600 active:scale-95
               disabled:opacity-25 disabled:hover:bg-clyde-500 transition-all duration-150"
           >
@@ -121,7 +136,7 @@ export default function ChatInput() {
             </svg>
           </button>
         </div>
-        <p className="text-center text-[11px] sm:text-xs text-surface-400 mt-1.5 sm:mt-2">
+        <p className="text-center text-[11px] sm:text-xs text-surface-400 dark:text-surface-600 mt-1.5 sm:mt-2">
           Clyde helps you learn AI by doing real things — no experience needed
         </p>
       </div>

@@ -15,13 +15,14 @@ export default function TransitionCue() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       className="mx-auto max-w-md mt-5 sm:mt-6 mb-3 sm:mb-4 px-1"
     >
       <div className="relative rounded-2xl overflow-hidden">
         <div className="absolute inset-0 rounded-2xl animate-pulse-glow pointer-events-none" />
-        <div className="relative bg-white rounded-2xl border border-clyde-200/80 p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
-          <p className="text-[13px] sm:text-sm text-surface-600 text-center leading-relaxed">
+        <div className="relative bg-[var(--surface-card)] rounded-2xl border border-clyde-200/80 dark:border-clyde-800/60 p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
+          <p className="text-[13px] sm:text-sm text-surface-600 dark:text-surface-300 text-center leading-relaxed">
             {isPostStructured
               ? "You just used AI to turn a messy thought into something useful."
               : "You're getting the hang of this."}
@@ -32,8 +33,10 @@ export default function TransitionCue() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
               onClick={showExplanation}
-              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-clyde-50 border border-clyde-200
-                text-[13px] sm:text-sm font-medium text-clyde-700 hover:bg-clyde-100
+              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl
+                bg-clyde-50 dark:bg-clyde-950/60 border border-clyde-200 dark:border-clyde-800/50
+                text-[13px] sm:text-sm font-medium text-clyde-700 dark:text-clyde-300
+                hover:bg-clyde-100 dark:hover:bg-clyde-900/60
                 active:bg-clyde-200 transition-colors duration-150
                 flex items-center justify-center gap-2"
             >
@@ -45,9 +48,10 @@ export default function TransitionCue() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
               onClick={tryAnotherUseCase}
-              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white border border-surface-200
-                text-[13px] sm:text-sm font-medium text-surface-600 hover:bg-surface-50
-                hover:border-surface-300 active:bg-surface-100
+              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl
+                bg-[var(--surface-card)] border border-[var(--surface-border)]
+                text-[13px] sm:text-sm font-medium text-surface-600 dark:text-surface-300
+                hover:bg-[var(--surface-card-alt)] hover:border-[var(--surface-border)]
                 transition-colors duration-150 flex items-center justify-center gap-2"
             >
               <span className="text-base sm:text-lg" aria-hidden="true">✨</span>
