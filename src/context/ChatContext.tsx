@@ -39,6 +39,8 @@ interface ChatContextValue {
   hasSavedConversation: boolean;
   pendingInput: string;
   setPendingInput: (text: string) => void;
+  explanationContent: string | null;
+  explanationLoading: boolean;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -316,6 +318,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         state.phase === "structured" ||
         state.phase === "transition"
       ) {
+        dispatch({
+          type: "ADD_MESSAGE",
+          message: {
+            id: `divider-${Date.now()}`,
+            role: "clyde",
+            text: "",
+            timestamp: Date.now(),
+            isDivider: true,
+          },
+        });
         dispatch({ type: "SET_PHASE", phase: "conversation" });
         dispatch({ type: "SET_TURN_COUNT", count: 1 });
         dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
@@ -493,14 +505,60 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [state, dispatch, addTypingMessage, finishMessage, setMessageError, getConversationHistory, maybeInjectInsight]
   );
 
-  const showExplanation = useCallback(() => {
+  const showExplanation = useCallback(async () => {
     track("explanation_viewed");
     dispatch({ type: "SET_PHASE", phase: "explanation" });
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
     dispatch({ type: "SHOW_EXPLANATION", show: true });
     dispatch({ type: "COMPLETE_FIRST_FLOW" });
     dispatch({ type: "INCREMENT_FLOWS" });
-  }, [dispatch]);
+    dispatch({ type: "SET_EXPLANATION_CONTENT", content: "" });
+    dispatch({ type: "SET_EXPLANATION_LOADING", loading: true });
+
+    try {
+      const res = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationHistory: getConversationHistory(),
+          action: state.selectedAction || "plan",
+          userContext: state.userContext,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        dispatch({ type: "SET_EXPLANATION_LOADING", loading: false });
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          try {
+            const event = JSON.parse(raw);
+            if (event.type === "delta" && event.text) {
+              accumulated += event.text;
+              dispatch({ type: "SET_EXPLANATION_CONTENT", content: accumulated });
+            }
+          } catch { continue; }
+        }
+      }
+    } finally {
+      dispatch({ type: "SET_EXPLANATION_LOADING", loading: false });
+    }
+  }, [dispatch, getConversationHistory, state.selectedAction, state.userContext]);
 
   const tryAnotherUseCase = useCallback(async () => {
     track("try_another_use_case");
@@ -519,7 +577,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       history.push({
         role: "user",
         content:
-          "[The user wants to try another use case. Invite them to tell you what else they have going on. Be warm and brief.]",
+          "[New topic. Ask the user warmly what else they've got going on. One sentence, no more.]",
       });
       lastHistoryRef.current = history;
 
@@ -588,6 +646,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         hasSavedConversation,
         pendingInput,
         setPendingInput,
+        explanationContent: state.explanationContent,
+        explanationLoading: state.explanationLoading,
       }}
     >
       {children}

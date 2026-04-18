@@ -31,6 +31,16 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const { state, retryLastMessage } = useChatContext();
   const expression = getClydeExpression(state.phase, message.isTyping);
 
+  if (message.isDivider) {
+    return (
+      <div className="flex items-center gap-3 py-1 my-1">
+        <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+        <span className="text-[11px] text-surface-400 dark:text-surface-500 flex-shrink-0">new topic</span>
+        <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+      </div>
+    );
+  }
+
   if (message.isInsight) {
     return (
       <motion.div

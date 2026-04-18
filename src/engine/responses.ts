@@ -246,9 +246,6 @@ function getPrimarySuggestion(contexts: string[]): {
   };
 }
 
-function getChipsForContext(context: string): ActionChip[] {
-  return [];
-}
 
 export function generateStructuredOutput(
   state: ConversationState,
@@ -559,28 +556,6 @@ function buildBreakdown(ctx: string, userText: string): StructuredContent {
   };
 }
 
-export function generateExplanation(state: ConversationState): Message {
-  const userMessages = state.messages.filter((m) => m.role === "user");
-  const contexts = state.userContext;
-  const actionType = state.selectedAction || "plan";
-
-  const explanationText = `Here's what just happened behind the scenes:
-
-**What I noticed:** When you told me about your day, I picked up on a few things — ${contexts.slice(0, 3).join(", ")}. That helped me understand what kind of help would actually be useful.
-
-**Why I suggested what I did:** Based on the context, a ${actionType} seemed like the most practical next step. I didn't just pick randomly — I matched what you described to a common pattern where people find AI genuinely helpful.
-
-**How it works:** I took your plain-language description and structured it into something actionable. That's one of the most useful things AI can do — turn fuzzy thoughts into clear steps.
-
-**What you could try next:** Now that you've seen this in action, you could try asking AI to help with similar tasks in your life. The key is: describe what's going on in plain language, and let it organize your thinking.`;
-
-  return {
-    id: nextId(),
-    role: "clyde",
-    text: explanationText,
-    timestamp: Date.now(),
-  };
-}
 
 function makeClydeMessage(text: string, chips?: ActionChip[]): Message {
   return {

@@ -22,8 +22,8 @@ export default function TransitionCue() {
     >
       <div className="relative rounded-2xl overflow-hidden">
         <div className="absolute inset-0 rounded-2xl animate-pulse-glow pointer-events-none" />
-        <div className="relative bg-[var(--surface-card)] rounded-2xl border border-clyde-200/80 dark:border-clyde-800/60 p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
-          <p className="text-[13px] sm:text-sm text-surface-600 dark:text-surface-300 text-center leading-relaxed">
+        <div className="relative bg-gradient-to-b from-clyde-50 to-white dark:from-clyde-950/50 dark:to-[var(--surface-card)] rounded-2xl border border-clyde-200 dark:border-clyde-800/60 p-5 sm:p-6 space-y-3 sm:space-y-4 shadow-sm">
+          <p className="text-sm sm:text-base font-medium text-surface-800 dark:text-surface-100 text-center leading-relaxed">
             {isPostStructured
               ? "You just used AI to turn a messy thought into something useful."
               : "You're getting the hang of this."}
@@ -33,6 +33,9 @@ export default function TransitionCue() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
               onClick={showExplanation}
               className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl
                 bg-clyde-50 dark:bg-clyde-950/60 border border-clyde-200 dark:border-clyde-800/50
@@ -48,6 +51,9 @@ export default function TransitionCue() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.3 }}
               onClick={tryAnotherUseCase}
               className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl
                 bg-[var(--surface-card)] border border-[var(--surface-border)]

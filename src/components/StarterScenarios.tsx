@@ -13,7 +13,7 @@ const SCENARIOS = [
 ];
 
 export default function StarterScenarios() {
-  const { sendMessage } = useChatContext();
+  const { setPendingInput } = useChatContext();
 
   return (
     <motion.div
@@ -32,7 +32,7 @@ export default function StarterScenarios() {
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2, delay: 0.35 + i * 0.06 }}
-            onClick={() => sendMessage(s.prompt)}
+            onClick={() => setPendingInput(s.prompt)}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full
               text-[13px] font-medium border
               text-surface-600 dark:text-surface-300

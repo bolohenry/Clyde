@@ -231,15 +231,21 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: 0.1 }}
+      initial={{ opacity: 0, y: 14, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 280, damping: 22, delay: 0.1 }}
       className="mt-3 ml-11 sm:ml-[52px] mr-1 sm:mr-4 rounded-xl
         border border-[var(--surface-border)] bg-[var(--surface-card)] shadow-sm overflow-hidden"
     >
       {/* Card header */}
-      <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-[var(--surface-card-alt)] border-b border-[var(--surface-border)] flex items-center justify-between gap-2">
-        <h3 className="text-[13px] sm:text-sm font-semibold text-surface-700 dark:text-surface-200 flex-1 min-w-0 truncate">
+      <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-clyde-50 dark:bg-clyde-950/40 border-b border-clyde-100 dark:border-clyde-900/50 flex items-center justify-between gap-2">
+        <h3 className="text-[13px] sm:text-sm font-semibold text-clyde-800 dark:text-clyde-200 flex-1 min-w-0 truncate">
+          <span className="mr-1.5" aria-hidden="true">
+            {displayContent.type === "checklist" ? "✅" :
+             displayContent.type === "plan" ? "📋" :
+             displayContent.type === "comparison" ? "⚖️" :
+             displayContent.type === "draft" ? "✏️" : "📋"}
+          </span>
           {displayContent.title}
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">

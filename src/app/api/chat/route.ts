@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
           model,
           messages: fullMessages,
           temperature: 0.7,
-          max_tokens: 600,
+          max_tokens: 900,
           stream: true,
         });
 

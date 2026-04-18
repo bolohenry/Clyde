@@ -12,6 +12,8 @@ export const initialState: ConversationState = {
   hasCompletedFirstFlow: false,
   triedUseCases: [],
   totalFlowsCompleted: 0,
+  explanationContent: null,
+  explanationLoading: false,
 };
 
 export function conversationReducer(
@@ -101,8 +103,14 @@ export function conversationReducer(
         totalFlowsCompleted: state.totalFlowsCompleted + 1,
       };
 
+    case "SET_EXPLANATION_CONTENT":
+      return { ...state, explanationContent: action.content };
+
+    case "SET_EXPLANATION_LOADING":
+      return { ...state, explanationLoading: action.loading };
+
     case "RESET":
-      return initialState;
+      return { ...initialState, explanationContent: null, explanationLoading: false };
 
     default:
       return state;

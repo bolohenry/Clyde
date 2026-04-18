@@ -10,7 +10,6 @@ const PHASE_TITLES: Record<string, string> = {
   structured: "Clyde made something for you",
   explanation: "How Clyde works",
   flexible: "Keep going with Clyde",
-  learn: "Learning with Clyde",
 };
 
 export default function DynamicTitle() {

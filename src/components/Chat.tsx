@@ -57,9 +57,7 @@ export default function Chat() {
     initRef.current = true;
 
     if (!hasSavedConversation) {
-      setTimeout(() => {
-        setUiPhase("typewriter");
-      }, 1400);
+      setUiPhase("typewriter");
     }
   }, [hasSavedConversation]);
 
@@ -146,7 +144,8 @@ export default function Chat() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -30 }}
                 transition={{ duration: 0.5 }}
-                className="flex flex-col items-center justify-center min-h-[55vh] text-center py-12"
+                onClick={() => setUiPhase("typewriter")}
+                className="flex flex-col items-center justify-center min-h-[55vh] text-center py-12 cursor-pointer select-none"
               >
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0, y: 20 }}
@@ -170,7 +169,7 @@ export default function Chat() {
                   transition={{ delay: 0.55, duration: 0.5 }}
                   className="text-surface-500 dark:text-surface-400 text-sm sm:text-base max-w-xs leading-relaxed"
                 >
-                  I help people learn AI by doing real things — not lectures.
+                  Tell me what's on your mind. I'll show you what AI can actually do.
                 </motion.p>
               </motion.div>
             )}
@@ -181,7 +180,7 @@ export default function Chat() {
             <div className="pt-4 sm:pt-8">
               <TypewriterMessage
                 text={welcomeText}
-                speed={22}
+                speed={14}
                 onComplete={finishTypewriter}
               />
             </div>

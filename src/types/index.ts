@@ -43,6 +43,7 @@ export interface Message {
   isError?: boolean;
   errorCode?: "rate_limit" | "llm_error" | "network" | "no_api_key";
   isInsight?: boolean; // renders as a centered callout, not a speech bubble
+  isDivider?: boolean;
   imageUrl?: string;          // base64 data URL for attached image
   attachedFileName?: string;  // display name for attached file
   attachedFileContent?: string; // extracted text content (max 8 000 chars)
@@ -54,7 +55,6 @@ export type ConversationPhase =
   | "conversation"
   | "transition"
   | "structured"
-  | "learn"
   | "explanation"
   | "flexible";
 
@@ -76,6 +76,8 @@ export interface ConversationState {
   hasCompletedFirstFlow: boolean;
   triedUseCases: SuggestionType[];   // ordered list of completed use cases
   totalFlowsCompleted: number;       // how many full use-case flows done
+  explanationContent: string | null;
+  explanationLoading: boolean;
 }
 
 export type ChatAction =
@@ -92,4 +94,6 @@ export type ChatAction =
   | { type: "COMPLETE_FIRST_FLOW" }
   | { type: "COMPLETE_USE_CASE"; action: SuggestionType }
   | { type: "INCREMENT_FLOWS" }
+  | { type: "SET_EXPLANATION_CONTENT"; content: string }
+  | { type: "SET_EXPLANATION_LOADING"; loading: boolean }
   | { type: "RESET" };

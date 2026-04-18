@@ -20,6 +20,7 @@ export default function TypewriterMessage({
   const indexRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     indexRef.current = 0;
@@ -28,26 +29,37 @@ export default function TypewriterMessage({
 
     if (!text) return;
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       if (indexRef.current < text.length) {
         indexRef.current += 1;
         setDisplayedText(text.slice(0, indexRef.current));
       } else {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
         setIsComplete(true);
         onCompleteRef.current?.();
       }
     }, speed);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [text, speed]);
+
+  const handleSkip = () => {
+    if (isComplete) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setDisplayedText(text);
+    setIsComplete(true);
+    onCompleteRef.current?.();
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex items-end gap-2 sm:gap-2.5"
+      onClick={handleSkip}
+      className="flex items-end gap-2 sm:gap-2.5 cursor-pointer"
     >
       <ClydeAvatar size="sm" expression="neutral" />
       <div className="relative max-w-[82%] sm:max-w-[78%]">

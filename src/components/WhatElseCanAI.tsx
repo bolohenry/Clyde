@@ -65,13 +65,11 @@ const CATEGORIES: Category[] = [
 
 export default function WhatElseCanAI() {
   const [isOpen, setIsOpen] = useState(false);
-  const [openCategory, setOpenCategory] = useState<number | null>(null);
   const { setPendingInput } = useChatContext();
 
   const handleExampleClick = (prompt: string) => {
     setPendingInput(prompt);
     setIsOpen(false);
-    setOpenCategory(null);
     // Scroll to bottom so input is visible
     window.requestAnimationFrame(() => {
       document.querySelector("[aria-label='Message to Clyde']")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -113,81 +111,32 @@ export default function WhatElseCanAI() {
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="pt-2 space-y-1.5">
-              {CATEGORIES.map((cat, ci) => (
-                <div
-                  key={cat.title}
-                  className="rounded-xl border border-[var(--surface-border)] overflow-hidden bg-[var(--surface-card)]"
-                >
-                  <button
-                    onClick={() => setOpenCategory(openCategory === ci ? null : ci)}
-                    className="w-full flex items-center justify-between px-4 py-2.5
-                      text-left hover:bg-[var(--surface-card-alt)] transition-colors duration-150"
-                    aria-expanded={openCategory === ci}
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <span
-                        className={`text-sm flex items-center justify-center w-6 h-6 rounded-md ${cat.color}`}
-                        aria-hidden="true"
+            <div className="pt-2 space-y-3">
+              {CATEGORIES.map((cat) => (
+                <div key={cat.title}>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${cat.color}`}>
+                    {cat.icon} {cat.title}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cat.examples.map((ex) => (
+                      <button
+                        key={ex.label}
+                        onClick={() => handleExampleClick(ex.prompt)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full
+                          text-[12px] font-medium border transition-all duration-150
+                          text-surface-600 dark:text-surface-300
+                          bg-[var(--surface-card)] border-[var(--surface-border)]
+                          hover:border-clyde-300 dark:hover:border-clyde-700
+                          hover:text-clyde-700 dark:hover:text-clyde-300
+                          hover:bg-clyde-50 dark:hover:bg-clyde-950/40
+                          active:scale-95 min-h-[32px]"
                       >
-                        {cat.icon}
-                      </span>
-                      <span className="text-[13px] font-semibold text-surface-700 dark:text-surface-200">
-                        {cat.title}
-                      </span>
-                    </span>
-                    <motion.svg
-                      animate={{ rotate: openCategory === ci ? 180 : 0 }}
-                      transition={{ duration: 0.18 }}
-                      width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      className="text-surface-500 dark:text-surface-400 flex-shrink-0"
-                      aria-hidden="true"
-                    >
-                      <polyline points="6 9 12 15 18 9"/>
-                    </motion.svg>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {openCategory === ci && (
-                      <motion.div
-                        key="examples"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-4 pb-3 pt-1 flex flex-wrap gap-1.5">
-                          {cat.examples.map((ex) => (
-                            <button
-                              key={ex.label}
-                              onClick={() => handleExampleClick(ex.prompt)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full
-                                text-[12px] font-medium border
-                                text-surface-600 dark:text-surface-300
-                                bg-[var(--surface-card-alt)] border-[var(--surface-border)]
-                                hover:border-clyde-300 dark:hover:border-clyde-700
-                                hover:text-clyde-700 dark:hover:text-clyde-300
-                                hover:bg-clyde-50 dark:hover:bg-clyde-950/40
-                                active:scale-95 transition-all duration-150 min-h-[36px]"
-                            >
-                              {ex.label}
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                <polyline points="9 18 15 12 9 6"/>
-                              </svg>
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        {ex.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ))}
-
-              <p className="text-center text-[11px] text-surface-500 dark:text-surface-400 pt-1 pb-0.5">
-                Click any example to prefill the chat
-              </p>
             </div>
           </motion.div>
         )}

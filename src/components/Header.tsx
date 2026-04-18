@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import { useDarkMode } from "@/context/DarkModeContext";
 import { ConversationPhase } from "@/types";
@@ -20,7 +21,26 @@ function phaseToExpression(phase: ConversationPhase): "neutral" | "thinking" | "
 export default function Header() {
   const { state, resetConversation } = useChatContext();
   const { isDark, toggle } = useDarkMode();
-  const expression = phaseToExpression(state.phase);
+  const [expression, setExpression] = useState<"neutral" | "thinking" | "happy" | "excited">(
+    phaseToExpression(state.phase)
+  );
+  const prevPhaseRef = useRef(state.phase);
+
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+
+    if (prev !== "structured" && state.phase === "structured") {
+      setExpression("excited");
+      const t = setTimeout(() => setExpression("happy"), 2000);
+      return () => clearTimeout(t);
+    }
+
+    if (state.phase !== "structured" && state.phase !== "explanation") {
+      setExpression(phaseToExpression(state.phase));
+    }
+  }, [state.phase]);
+
   const hasStarted = state.phase !== "welcome" || state.messages.length > 0;
 
   return (
