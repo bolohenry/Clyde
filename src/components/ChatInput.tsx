@@ -34,10 +34,11 @@ export default function ChatInput() {
   const { sendMessage, state, pendingInput, setPendingInput } = useChatContext();
 
   const isWaitingForResponse = state.messages.some((m) => m.isTyping);
+  const [speechSupported, setSpeechSupported] = useState(false);
 
-  const speechSupported =
-    typeof window !== "undefined" &&
-    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  useEffect(() => {
+    setSpeechSupported(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+  }, []);
 
   // Populate textarea when an example is clicked in WhatElseCanAI
   useEffect(() => {
