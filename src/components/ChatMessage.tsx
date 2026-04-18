@@ -173,14 +173,41 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           )}
         </>
       ) : (
-        <div className="flex items-end gap-2 sm:gap-2.5 justify-end">
-          <div className="relative max-w-[82%] sm:max-w-[78%]">
-            <div className="px-4 py-3 rounded-2xl rounded-br-md bg-clyde-500 shadow-sm">
-              <span className="text-[15px] sm:text-sm leading-relaxed text-white">
-                {renderText(message.text)}
-              </span>
+        <div className="flex flex-col items-end gap-1.5">
+          {/* File attachment badge */}
+          {message.attachedFileName && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl
+              bg-clyde-600/90 text-white/90 text-[11px] font-medium max-w-[82%] sm:max-w-[78%]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="flex-shrink-0">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span className="truncate">{message.attachedFileName}</span>
             </div>
-            <SpeechTail side="right" />
+          )}
+          {/* Image attachment */}
+          {message.imageUrl && (
+            <div className="max-w-[82%] sm:max-w-[78%]">
+              <img
+                src={message.imageUrl}
+                alt="Attached image"
+                className="rounded-xl max-h-48 object-cover border border-clyde-400/40 shadow-sm"
+              />
+            </div>
+          )}
+          <div className="flex items-end gap-2 sm:gap-2.5 justify-end">
+            <div className="relative max-w-[82%] sm:max-w-[78%]">
+              <div className="px-4 py-3 rounded-2xl rounded-br-md bg-clyde-500 shadow-sm">
+                <span className="text-[15px] sm:text-sm leading-relaxed text-white">
+                  {message.text ? renderText(message.text) : (
+                    <span className="italic opacity-75">
+                      {message.attachedFileName ? "Attached a file" : "Attached an image"}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <SpeechTail side="right" />
+            </div>
           </div>
         </div>
       )}

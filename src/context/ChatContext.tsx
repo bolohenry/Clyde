@@ -28,7 +28,7 @@ import { track } from "@/lib/analytics";
 interface ChatContextValue {
   state: ConversationState;
   dispatch: React.Dispatch<ChatAction>;
-  sendMessage: (text: string, imageUrl?: string) => void;
+  sendMessage: (text: string, imageUrl?: string, fileContent?: string, fileName?: string) => void;
   selectChipAction: (action: SuggestionType) => void;
   showExplanation: () => void;
   tryAnotherUseCase: () => void;
@@ -156,6 +156,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (m.isTyping || m.isError) continue;
         if (m.role === "clyde") {
           history.push({ role: "assistant", content: m.text });
+        } else if (m.attachedFileContent) {
+          // Replay file content so follow-up questions stay grounded
+          const combined = `[Attached file: ${m.attachedFileName ?? "file"}]\n\n${m.attachedFileContent}\n\n---\n\n${m.text || "Please review this."}`;
+          history.push({ role: "user", content: combined });
         } else {
           history.push({ role: "user", content: m.text });
         }
@@ -272,7 +276,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
 
   const sendMessage = useCallback(
-    async (text: string, imageUrl?: string) => {
+    async (text: string, imageUrl?: string, fileContent?: string, fileName?: string) => {
       if (processingRef.current) return;
       const now = Date.now();
       if (now - lastSendTimeRef.current < 1500) return; // 1.5s cooldown
@@ -285,6 +289,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         text,
         timestamp: Date.now(),
         imageUrl: imageUrl || undefined,
+        attachedFileName: fileName,
+        attachedFileContent: fileContent ? fileContent.slice(0, 8000) : undefined,
       };
       dispatch({ type: "ADD_MESSAGE", message: userMessage });
       dispatch({ type: "INCREMENT_TURN" });
@@ -321,7 +327,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       addTypingMessage(replyId);
 
       const history = getConversationHistory();
-      // If image is attached, build a vision message as the last entry
+      // Build the last user entry depending on attachment type
       if (imageUrl) {
         history.push({
           role: "user",
@@ -330,6 +336,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             { type: "text", text: text || "What do you see?" },
           ],
         });
+      } else if (fileContent) {
+        const combined = `[Attached file: ${fileName ?? "file"}]\n\n${fileContent.slice(0, 8000)}\n\n---\n\n${text || "Please review this."}`;
+        history.push({ role: "user", content: combined });
       } else {
         history.push({ role: "user", content: text });
       }

@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     .map((m) => {
       if (typeof m.content === "string") {
         if (!m.content.trim()) return null;
-        return { role: m.role, content: m.content.trim().slice(0, 4000) };
+        return { role: m.role, content: m.content.trim().slice(0, 15000) };
       }
       // Vision format: array of content parts
       if (Array.isArray(m.content)) {
