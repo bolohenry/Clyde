@@ -107,9 +107,9 @@ export default function ContextualFollowUps() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4, duration: 0.3 }}
-      className="mx-auto max-w-lg mt-3 px-1"
+      className="ml-11 sm:ml-[52px] mt-3"
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
+      <p className="text-[11px] font-medium text-surface-400 dark:text-surface-500 mb-2 uppercase tracking-wide">
         What to do next
       </p>
       <div className="flex flex-wrap gap-1.5">

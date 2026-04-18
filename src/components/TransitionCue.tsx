@@ -1,7 +1,7 @@
 "use client";
 
 import { useChatContext } from "@/context/ChatContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ContextualFollowUps from "./ContextualFollowUps";
 
 export default function TransitionCue() {
@@ -9,65 +9,43 @@ export default function TransitionCue() {
 
   if (!state.showTransitionCue) return null;
 
-  const isPostStructured =
-    state.phase === "structured" || state.phase === "transition";
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="mx-auto max-w-md mt-5 sm:mt-6 mb-3 sm:mb-4 px-1"
-    >
-      <div className="relative rounded-2xl overflow-hidden">
-        <div className="absolute inset-0 rounded-2xl animate-pulse-glow pointer-events-none" />
-        <div className="relative bg-gradient-to-b from-clyde-50 to-white dark:from-clyde-950/50 dark:to-[var(--surface-card)] rounded-2xl border border-clyde-200 dark:border-clyde-800/60 p-5 sm:p-6 space-y-3 sm:space-y-4 shadow-sm">
-          <p className="text-sm sm:text-base font-medium text-surface-800 dark:text-surface-100 text-center leading-relaxed">
-            {isPostStructured
-              ? "You just used AI to turn a messy thought into something useful."
-              : "You're getting the hang of this."}
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              onClick={showExplanation}
-              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl
-                bg-clyde-50 dark:bg-clyde-950/60 border border-clyde-200 dark:border-clyde-800/50
-                text-[13px] sm:text-sm font-medium text-clyde-700 dark:text-clyde-300
-                hover:bg-clyde-100 dark:hover:bg-clyde-900/60
-                active:bg-clyde-200 transition-colors duration-150
-                flex items-center justify-center gap-2"
-            >
-              <span className="text-base sm:text-lg" aria-hidden="true">💡</span>
-              See how Clyde did that
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.3 }}
-              onClick={tryAnotherUseCase}
-              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl
-                bg-[var(--surface-card)] border border-[var(--surface-border)]
-                text-[13px] sm:text-sm font-medium text-surface-600 dark:text-surface-300
-                hover:bg-[var(--surface-card-alt)] hover:border-[var(--surface-border)]
-                transition-colors duration-150 flex items-center justify-center gap-2"
-            >
-              <span className="text-base sm:text-lg" aria-hidden="true">✨</span>
-              Try something else
-            </motion.button>
-          </div>
+    <AnimatePresence>
+      <motion.div
+        key="transition-cue"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="mt-3"
+      >
+        {/* Two quiet text links — no box, no fanfare */}
+        <div className="ml-11 sm:ml-[52px] flex items-center gap-3 flex-wrap">
+          {!state.explanationVisible && (
+            <>
+              <button
+                onClick={showExplanation}
+                className="text-[13px] text-clyde-600 dark:text-clyde-400
+                  hover:text-clyde-700 dark:hover:text-clyde-300
+                  flex items-center gap-1.5 transition-colors duration-150"
+              >
+                💡 How did Clyde do that?
+              </button>
+              <span className="text-surface-300 dark:text-surface-600 select-none">·</span>
+            </>
+          )}
+          <button
+            onClick={tryAnotherUseCase}
+            className="text-[13px] text-surface-500 dark:text-surface-400
+              hover:text-surface-700 dark:hover:text-surface-200
+              flex items-center gap-1.5 transition-colors duration-150"
+          >
+            ✨ Try something else
+          </button>
         </div>
-      </div>
-      <ContextualFollowUps />
-    </motion.div>
+
+        {/* Contextual follow-up chips — aligned with the output card */}
+        <ContextualFollowUps />
+      </motion.div>
+    </AnimatePresence>
   );
 }

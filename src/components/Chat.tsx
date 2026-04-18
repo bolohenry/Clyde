@@ -13,6 +13,7 @@ import TypewriterMessage from "./TypewriterMessage";
 import ClydeAvatar from "./ClydeAvatar";
 import StarterScenarios from "./StarterScenarios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIdleNudge } from "@/hooks/useIdleNudge";
 
 export default function Chat() {
   const { state, dispatch, resetConversation, hasSavedConversation } = useChatContext();
@@ -119,6 +120,15 @@ export default function Chat() {
 
   const welcomeText = generateWelcomeMessage().text;
 
+  // Idle nudge — surfaces after 10s of no interaction in applicable phases
+  const { nudge, dismissNudge } = useIdleNudge({
+    messages: state.messages,
+    phase: state.phase,
+    turnCount: state.turnCount,
+    enabled: uiPhase === "chat" && !state.showTransitionCue && !state.explanationVisible,
+    delay: 10000,
+  });
+
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--surface-page)] transition-colors duration-200">
       {/* Screen-reader live region for phase announcements */}
@@ -208,7 +218,45 @@ export default function Chat() {
 
               <TransitionCue />
               <ExplanationPanel />
-              {/* Show WhatElseCanAI in flexible phase if explanation was skipped */}
+
+              {/* Idle nudge — Clyde speaks up after 10s of silence */}
+              <AnimatePresence>
+                {nudge && (
+                  <motion.div
+                    key="idle-nudge"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    className="flex items-end gap-2 sm:gap-2.5 mt-4"
+                  >
+                    <ClydeAvatar size="sm" expression="happy" animate={false} />
+                    <div className="max-w-[82%] sm:max-w-[78%]">
+                      <div className="px-4 py-3 rounded-2xl rounded-bl-md
+                        bg-[var(--surface-card)] border border-[var(--surface-border)]
+                        shadow-sm flex items-start justify-between gap-3">
+                        <span className="text-[14px] sm:text-sm text-surface-500
+                          dark:text-surface-400 leading-relaxed">
+                          {nudge.text}
+                        </span>
+                        <button
+                          onClick={dismissNudge}
+                          aria-label="Dismiss"
+                          className="flex-shrink-0 mt-0.5 text-surface-300 dark:text-surface-600
+                            hover:text-surface-500 dark:hover:text-surface-400 transition-colors"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* WhatElseCanAI — flexible phase, after first flow, explanation not open */}
               {state.phase === "flexible" && !state.explanationVisible && state.hasCompletedFirstFlow && (
                 <WhatElseCanAI />
               )}
