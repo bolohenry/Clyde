@@ -6,7 +6,40 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
 });
 
+/* ── Simple in-memory rate limiter ───────────────────────────
+   Keyed on IP. Allows RATE_LIMIT_MAX requests per RATE_LIMIT_WINDOW_MS.
+   State lives in the serverless instance — resets on cold start, but
+   protects against bursts within a warm instance.
+   ──────────────────────────────────────────────────────────── */
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 20; // max requests per window
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+  if (!checkRateLimit(ip)) {
+    return new Response(
+      JSON.stringify({ error: "Too many requests — slow down a bit.", code: "rate_limit" }),
+      { status: 429, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     return new Response(
       JSON.stringify({ error: "OPENAI_API_KEY not configured", code: "no_api_key" }),

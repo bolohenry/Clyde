@@ -108,7 +108,7 @@ export default function ChatInput() {
             rows={1}
             aria-label="Message to Clyde"
             className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 dark:text-surface-100
-              placeholder-surface-400 dark:placeholder-surface-600
+              placeholder-surface-500 dark:placeholder-surface-400
               bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50
               py-0.5"
           />
@@ -136,7 +136,7 @@ export default function ChatInput() {
             </svg>
           </button>
         </div>
-        <p className="text-center text-[11px] sm:text-xs text-surface-400 dark:text-surface-600 mt-1.5 sm:mt-2">
+        <p className="text-center text-[11px] sm:text-xs text-surface-500 dark:text-surface-400 mt-1.5 sm:mt-2">
           Clyde helps you learn AI by doing real things — no experience needed
         </p>
       </div>

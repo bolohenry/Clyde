@@ -84,7 +84,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
           {content.title}
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {typeof navigator !== "undefined" && navigator.share ? (
+          {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
             <button
               onClick={handleShare}
               aria-label="Share"
@@ -152,7 +152,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
               <span
                 className={`text-[13px] sm:text-sm leading-relaxed transition-all duration-200 ${
                   checkedItems.has(item.id)
-                    ? "line-through text-surface-400 dark:text-surface-600"
+                    ? "line-through text-surface-500 dark:text-surface-400"
                     : "text-surface-700 dark:text-surface-200 group-hover:text-surface-900 dark:group-hover:text-surface-100"
                 }`}
               >
@@ -187,7 +187,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
                       key={j}
                       className="text-[12px] sm:text-sm text-surface-500 dark:text-surface-400 flex items-start gap-1.5 sm:gap-2"
                     >
-                      <span className="text-surface-300 dark:text-surface-600 mt-1 flex-shrink-0 text-[10px]">●</span>
+                      <span className="text-surface-400 dark:text-surface-500 mt-1 flex-shrink-0 text-[10px]">●</span>
                       {sub}
                     </li>
                   ))}

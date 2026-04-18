@@ -114,7 +114,7 @@ export default function ExplanationPanel() {
                 transition={{ delay: 0.6, duration: 0.3 }}
                 className="pt-1 border-t border-[var(--surface-border)]"
               >
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-600 mb-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-2">
                   What you&apos;ve tried
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -126,7 +126,7 @@ export default function ExplanationPanel() {
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors
                           ${done
                             ? "bg-clyde-50 dark:bg-clyde-950/60 border-clyde-200 dark:border-clyde-800/50 text-clyde-700 dark:text-clyde-300"
-                            : "bg-[var(--surface-card-alt)] border-[var(--surface-border)] text-surface-400 dark:text-surface-600"
+                            : "bg-[var(--surface-card-alt)] border-[var(--surface-border)] text-surface-500 dark:text-surface-400"
                           }`}
                       >
                         {done && (
@@ -140,7 +140,7 @@ export default function ExplanationPanel() {
                   })}
                 </div>
                 {tried.length >= 3 && (
-                  <p className="text-[11px] text-surface-400 dark:text-surface-600 mt-2">
+                  <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-2">
                     You&apos;re building a real AI habit. Most people never get this far.
                   </p>
                 )}

@@ -41,7 +41,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       >
         <div className="flex items-center gap-2 w-full max-w-sm">
           <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-600 flex-shrink-0">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 flex-shrink-0">
             Notice something?
           </span>
           <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
