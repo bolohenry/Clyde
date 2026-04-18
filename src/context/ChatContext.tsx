@@ -34,6 +34,7 @@ interface ChatContextValue {
   startFreeform: () => void;
   retryLastMessage: () => void;
   resetConversation: () => void;
+  resetKey: number;
   hasSavedConversation: boolean;
   pendingInput: string;
   setPendingInput: (text: string) => void;
@@ -132,6 +133,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         : false
   );
   const [pendingInput, setPendingInput] = useState("");
+  const [resetKey, setResetKey] = useState(0);
   usePersistence(state);
   const processingRef = useRef(false);
   const llmAvailableRef = useRef<boolean | null>(null);
@@ -528,8 +530,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [dispatch]);
 
   const resetConversation = useCallback(() => {
+    processingRef.current = false;
     clearPersistedState();
     dispatch({ type: "RESET" });
+    setResetKey((k) => k + 1);
   }, [dispatch]);
 
   return (
@@ -544,6 +548,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         startFreeform,
         retryLastMessage,
         resetConversation,
+        resetKey,
         hasSavedConversation,
         pendingInput,
         setPendingInput,

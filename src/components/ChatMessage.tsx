@@ -177,7 +177,7 @@ function SpeechTail({ side, variant }: { side: "left" | "right"; variant?: "erro
     const fill = variant === "error" ? "var(--tw-bg-opacity, rgb(254 242 242))" : "var(--surface-card)";
     return (
       <svg
-        className="absolute -bottom-[1px] -left-[6px] w-4 h-3"
+        className="absolute -bottom-[1px] -left-[6px] w-4 h-3 speech-tail-left"
         viewBox="0 0 16 12"
         fill="none"
       >

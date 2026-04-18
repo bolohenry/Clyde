@@ -158,8 +158,8 @@ export default function ChatInput() {
     >
       <div className="max-w-2xl mx-auto">
         <div
-          className={`flex items-end gap-2 bg-[var(--surface-card)] rounded-2xl border shadow-sm
-            px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200
+          className={`flex items-center gap-2 bg-[var(--surface-card)] rounded-2xl border shadow-sm
+            px-3 sm:px-4 py-2.5 transition-all duration-200
             ${isListening
               ? "border-clyde-400 dark:border-clyde-600 shadow-md"
               : isWaitingForResponse
@@ -212,8 +212,7 @@ export default function ChatInput() {
             aria-label="Message to Clyde"
             className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 dark:text-surface-100
               placeholder-surface-500 dark:placeholder-surface-400
-              bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50
-              py-0.5"
+              bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50"
           />
           <button
             onClick={handleSubmit}
