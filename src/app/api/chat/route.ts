@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
   const model = hasVision ? "gpt-4o" : "gpt-4o-mini";
 
   // For vision requests, prepend system prompt manually since buildMessages only accepts strings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /* eslint-disable-next-line */
   const fullMessages: any[] = hasVision
     ? [{ role: "system", content: CLYDE_SYSTEM_PROMPT }, ...sanitized]
     : buildMessages(

@@ -161,7 +161,7 @@ export default function Chat() {
                   transition={{ delay: 0.3, duration: 0.5 }}
                   className="text-2xl sm:text-3xl font-semibold text-surface-800 dark:text-surface-100 mt-5 mb-2"
                 >
-                  {"Hey, I'm Clyde"}
+                  Hey, I&apos;m Clyde
                 </motion.h1>
                 <motion.p
                   initial={{ opacity: 0, y: 12 }}
@@ -169,7 +169,7 @@ export default function Chat() {
                   transition={{ delay: 0.55, duration: 0.5 }}
                   className="text-surface-500 dark:text-surface-400 text-sm sm:text-base max-w-xs leading-relaxed"
                 >
-                  Tell me what's on your mind. I'll show you what AI can actually do.
+                  Tell me what&apos;s on your mind. I&apos;ll show you what AI can actually do.
                 </motion.p>
               </motion.div>
             )}
