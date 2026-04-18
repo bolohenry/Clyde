@@ -1,13 +1,15 @@
 "use client";
 
+import { MotionConfig } from "framer-motion";
 import { ChatProvider, useChatContext } from "@/context/ChatContext";
-import { ThemeProvider } from "@/context/ThemeContext";
+import { DarkModeProvider } from "@/context/DarkModeContext";
 import Chat from "@/components/Chat";
+import DynamicTitle from "@/components/DynamicTitle";
 
 function InnerApp() {
   const { resetKey } = useChatContext();
   return (
-    <main className="h-screen bg-surface-50 dark:bg-surface-900">
+    <main className="h-screen bg-[var(--surface-page)]">
       <Chat key={resetKey} />
     </main>
   );
@@ -15,10 +17,13 @@ function InnerApp() {
 
 export default function Home() {
   return (
-    <ThemeProvider>
-      <ChatProvider>
-        <InnerApp />
-      </ChatProvider>
-    </ThemeProvider>
+    <DarkModeProvider>
+      <MotionConfig reducedMotion="user">
+        <ChatProvider>
+          <DynamicTitle />
+          <InnerApp />
+        </ChatProvider>
+      </MotionConfig>
+    </DarkModeProvider>
   );
 }

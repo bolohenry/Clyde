@@ -8,6 +8,13 @@ import StructuredOutput from "./StructuredOutput";
 import ClydeAvatar from "./ClydeAvatar";
 import { useChatContext } from "@/context/ChatContext";
 
+const ERROR_LABELS: Record<NonNullable<Message["errorCode"]>, string> = {
+  rate_limit: "Rate limit hit — wait a moment then retry.",
+  llm_error: "Something went wrong. Try again?",
+  network: "Network error. Check your connection.",
+  no_api_key: "API key not configured.",
+};
+
 interface ChatMessageProps {
   message: Message;
 }
@@ -21,19 +28,78 @@ function getClydeExpression(phase: string, isTyping?: boolean): "neutral" | "thi
 
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isClyde = message.role === "clyde";
-  const { state } = useChatContext();
+  const { state, retryLastMessage } = useChatContext();
   const expression = getClydeExpression(state.phase, message.isTyping);
+
+  if (message.isInsight) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex flex-col items-center gap-2 py-2 px-2"
+      >
+        <div className="flex items-center gap-2 w-full max-w-sm">
+          <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 flex-shrink-0">
+            Notice something?
+          </span>
+          <div className="h-px flex-1 bg-surface-200 dark:bg-surface-700" />
+        </div>
+        <p className="text-[13px] text-center text-surface-500 dark:text-surface-400 leading-relaxed max-w-xs">
+          {message.text}
+        </p>
+      </motion.div>
+    );
+  }
+
+  if (message.isError) {
+    const label = message.errorCode ? ERROR_LABELS[message.errorCode] : "Something went wrong.";
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex items-end gap-2 sm:gap-2.5"
+      >
+        <ClydeAvatar size="sm" expression="neutral" />
+        <div className="relative max-w-[82%] sm:max-w-[78%]">
+          <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 shadow-sm">
+            <p className="text-[14px] sm:text-sm text-red-700 dark:text-red-400">{label}</p>
+            {message.errorCode !== "no_api_key" && (
+              <button
+                onClick={retryLastMessage}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                  text-[12px] font-medium text-red-700 dark:text-red-400
+                  bg-white dark:bg-surface-800 border border-red-200 dark:border-red-900/60
+                  hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-300
+                  active:scale-95 transition-all duration-150 min-h-[36px]"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                Retry
+              </button>
+            )}
+          </div>
+          <SpeechTail side="left" variant="error" />
+        </div>
+      </motion.div>
+    );
+  }
 
   if (message.isTyping) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
         className="flex items-end gap-2 sm:gap-2.5"
       >
         <ClydeAvatar size="sm" expression="thinking" />
         <div className="relative">
-          <div className="bg-white dark:bg-surface-800 rounded-2xl rounded-bl-md border border-surface-200 dark:border-surface-700 shadow-sm">
+          <div className="bg-[var(--surface-card)] rounded-2xl rounded-bl-md border border-[var(--surface-border)] shadow-sm">
             <TypingIndicator />
           </div>
           <SpeechTail side="left" />
@@ -68,7 +134,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <motion.div
-      initial={isWelcome ? false : { opacity: 0, y: 6 }}
+      initial={isWelcome ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
@@ -76,7 +142,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <div className="flex items-end gap-2 sm:gap-2.5">
           <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
           <div className="relative max-w-[82%] sm:max-w-[78%]">
-            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-sm">
+            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-sm">
               <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700 dark:text-surface-200">
                 {renderText(message.text)}
               </span>
@@ -106,8 +172,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   );
 }
 
-function SpeechTail({ side }: { side: "left" | "right" }) {
+function SpeechTail({ side, variant }: { side: "left" | "right"; variant?: "error" }) {
   if (side === "left") {
+    const fill = variant === "error" ? "var(--tw-bg-opacity, rgb(254 242 242))" : "var(--surface-card)";
     return (
       <svg
         className="absolute -bottom-[1px] -left-[6px] w-4 h-3 speech-tail-left"
@@ -116,19 +183,13 @@ function SpeechTail({ side }: { side: "left" | "right" }) {
       >
         <path
           d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
-          className="fill-white dark:fill-surface-800"
-        />
-        <path
-          d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
-          stroke="#e7e5e4"
+          fill={variant === "error" ? "transparent" : "var(--surface-card)"}
+          stroke={variant === "error" ? "transparent" : "var(--surface-border)"}
           strokeWidth="1"
-          fill="none"
-          clipPath="inset(0 0 0 0)"
-          className="dark:stroke-surface-700"
         />
         <path
           d="M16 1 C16 1 9 1 5 4.5 C1.5 7.5 1 11 1 11 C1 11 4.5 7.5 8.5 5.5 C12.5 3.5 16 2 16 1Z"
-          className="fill-white dark:fill-surface-800"
+          fill={variant === "error" ? "transparent" : "var(--surface-card)"}
         />
       </svg>
     );

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110">
+  <!-- Legs -->
+  <rect x="27" y="88" width="14" height="20" rx="4" fill="#1a2744"/>
+  <rect x="47" y="88" width="13" height="20" rx="4" fill="#1a2744"/>
+  <!-- Shoes -->
+  <ellipse cx="34" cy="107" rx="11" ry="4" fill="#111827"/>
+  <ellipse cx="53" cy="107" rx="10" ry="4" fill="#111827"/>
+  <!-- Body -->
+  <ellipse cx="44" cy="72" rx="30" ry="24" fill="#1a2744"/>
+  <rect x="14" y="82" width="60" height="10" fill="#1a2744"/>
+  <!-- Left arm -->
+  <path d="M16 64 Q10 75 10 87" stroke="#1a2744" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <ellipse cx="10" cy="91" rx="5" ry="4" fill="#f5c4a1" transform="rotate(10 10 91)"/>
+  <!-- Right arm raised -->
+  <path d="M70 60 Q80 44 84 24" stroke="#1a2744" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <ellipse cx="84" cy="18" rx="6" ry="5" fill="#f5c4a1" transform="rotate(-20 84 18)"/>
+  <!-- Shirt -->
+  <ellipse cx="44" cy="70" rx="7" ry="17" fill="#f2ede8"/>
+  <!-- Lapels -->
+  <path d="M37 57 L44 71 L37 83 L14 70 L14 57Z" fill="#1a2744"/>
+  <path d="M51 57 L44 71 L51 83 L74 70 L74 57Z" fill="#1a2744"/>
+  <!-- Collar -->
+  <path d="M37 57 L44 54 L51 57" fill="white"/>
+  <!-- Bow tie -->
+  <path d="M36 54 L44 57.5 L36 61Z" fill="#9b2335"/>
+  <path d="M52 54 L44 57.5 L52 61Z" fill="#9b2335"/>
+  <circle cx="44" cy="57.5" r="2.5" fill="#6d1a26"/>
+  <!-- Neck -->
+  <rect x="39" y="50" width="10" height="7" rx="2" fill="#e8ad8a"/>
+  <!-- Head -->
+  <ellipse cx="48" cy="31" rx="24" ry="26" fill="#f5c4a1"/>
+  <!-- Cheeks -->
+  <circle cx="30" cy="37" r="7" fill="#e8909a" opacity="0.38"/>
+  <circle cx="66" cy="37" r="7" fill="#e8909a" opacity="0.38"/>
+  <!-- Eyebrows -->
+  <path d="M30 23 Q37 20 43 22" stroke="#7a5230" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M53 22 Q60 20 67 23" stroke="#7a5230" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Eyes -->
+  <ellipse cx="37" cy="30" rx="5.5" ry="6" fill="white"/>
+  <circle cx="37" cy="31" r="3.2" fill="#3d2b1f"/>
+  <circle cx="38.5" cy="29.5" r="1.1" fill="white"/>
+  <ellipse cx="59" cy="30" rx="5.5" ry="6" fill="white"/>
+  <circle cx="59" cy="31" r="3.2" fill="#3d2b1f"/>
+  <circle cx="60.5" cy="29.5" r="1.1" fill="white"/>
+  <!-- Mustache -->
+  <path d="M37 44 Q42 47 48 45 Q54 47 59 44" stroke="#7a5230" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M39 49 Q48 57 57 49" fill="#c0392b" opacity="0.7"/>
+  <path d="M39 49 Q48 52 57 49" fill="#f5f0ea"/>
+</svg>

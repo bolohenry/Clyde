@@ -1,0 +1,18 @@
+{
+  "name": "Clyde",
+  "short_name": "Clyde",
+  "description": "Learn AI by doing real things",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#0c87f0",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

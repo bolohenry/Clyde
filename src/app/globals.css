@@ -7,20 +7,57 @@
   --foreground: #1c1917;
   --clyde-primary: #0c87f0;
   --clyde-soft: #e0efff;
+
+  /* Surface tokens (light) */
+  --surface-page: #fafafa;
+  --surface-card: #ffffff;
+  --surface-card-alt: #f5f5f4;
+  --surface-border: #e7e5e4;
+  --surface-border-subtle: #f0efee;
+  --text-primary: #292524;
+  --text-secondary: #57534e;
+  --text-muted: #78716c;
+  --header-bg: rgba(255,255,255,0.9);
+
+  /* Safe area insets for notched devices */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+/* Dark mode tokens */
+.dark {
+  --background: #1a1714;
+  --foreground: #fafafa;
+  --surface-page: #1a1714;
+  --surface-card: #242120;
+  --surface-card-alt: #2c2926;
+  --surface-border: #3a3533;
+  --surface-border-subtle: #302d2b;
+  --text-primary: #f5f5f4;
+  --text-secondary: #d6d3d1;
+  --text-muted: #a8a29e;
+  --header-bg: rgba(26,23,20,0.92);
 }
 
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* Fix iOS Safari viewport height with keyboard */
+  height: -webkit-fill-available;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: var(--surface-page);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
+  /* Use fill-available for iOS Safari keyboard handling */
+  min-height: -webkit-fill-available;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Prevent layout shift on mobile keyboards */
@@ -52,4 +89,48 @@ textarea {
 /* Remove tap highlight on mobile */
 button, a, input, textarea {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure minimum touch target size */
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Safe area padding utilities */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(0rem, env(safe-area-inset-top));
+  }
+}
+
+/* Shimmer skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--surface-card-alt) 25%,
+      var(--surface-border) 50%,
+      var(--surface-card-alt) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+/* prefers-reduced-motion: disable all animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

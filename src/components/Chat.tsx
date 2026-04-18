@@ -7,36 +7,62 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import TransitionCue from "./TransitionCue";
 import ExplanationPanel from "./ExplanationPanel";
+import WhatElseCanAI from "./WhatElseCanAI";
 import Header from "./Header";
 import TypewriterMessage from "./TypewriterMessage";
 import ClydeAvatar from "./ClydeAvatar";
+import StarterScenarios from "./StarterScenarios";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Chat() {
-  const { state, dispatch } = useChatContext();
+  const { state, dispatch, resetConversation, hasSavedConversation } = useChatContext();
   const scrollRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
+  const userScrolledUpRef = useRef(false);
+  const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // For screen reader phase announcements
+  const liveRegionRef = useRef<HTMLDivElement>(null);
+  const prevPhaseRef = useRef(state.phase);
+  // If restoring a saved conversation, jump straight to chat
   const [uiPhase, setUiPhase] = useState<"hero" | "typewriter" | "chat">(
-    "hero"
+    hasSavedConversation ? "chat" : "hero"
   );
+  const [showRestoreBanner, setShowRestoreBanner] = useState(hasSavedConversation);
 
-  const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
+  const scrollToBottom = useCallback((force = false) => {
+    if (!scrollRef.current) return;
+    if (!force && userScrolledUpRef.current) return;
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, []);
+
+  // Detect when user scrolls up manually
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    userScrolledUpRef.current = distanceFromBottom > 80;
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
 
-    setTimeout(() => {
-      setUiPhase("typewriter");
-    }, 1400);
-  }, []);
+    if (!hasSavedConversation) {
+      setTimeout(() => {
+        setUiPhase("typewriter");
+      }, 1400);
+    }
+  }, [hasSavedConversation]);
 
   const finishTypewriter = useCallback(() => {
     if (uiPhase !== "chat") {
@@ -56,8 +82,18 @@ export default function Chat() {
   }, [state.messages, uiPhase, finishTypewriter]);
 
   useEffect(() => {
-    const timer = setTimeout(scrollToBottom, 150);
-    return () => clearTimeout(timer);
+    // New message from Clyde — always scroll (force=true resets user scroll tracking)
+    const lastMsg = state.messages[state.messages.length - 1];
+    const isNewClydeMsg = lastMsg && lastMsg.role === "clyde" && !lastMsg.isTyping;
+    if (isNewClydeMsg) {
+      userScrolledUpRef.current = false;
+    }
+
+    if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+    scrollDebounceRef.current = setTimeout(() => scrollToBottom(), 150);
+    return () => {
+      if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+    };
   }, [
     state.messages,
     state.showTransitionCue,
@@ -66,10 +102,35 @@ export default function Chat() {
     scrollToBottom,
   ]);
 
+  // Announce phase transitions to screen readers
+  useEffect(() => {
+    if (!liveRegionRef.current) return;
+    const prev = prevPhaseRef.current;
+    const next = state.phase;
+    prevPhaseRef.current = next;
+    if (prev === next) return;
+
+    const announcements: Partial<Record<typeof next, string>> = {
+      structured: "Clyde created something for you.",
+      explanation: "Explanation panel open.",
+      flexible: "Continue the conversation or try something new.",
+      transition: "You just used AI.",
+    };
+    const msg = announcements[next];
+    if (msg) liveRegionRef.current.textContent = msg;
+  }, [state.phase]);
+
   const welcomeText = generateWelcomeMessage().text;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-surface-50 dark:bg-surface-900">
+    <div className="flex flex-col h-[100dvh] bg-[var(--surface-page)] transition-colors duration-200">
+      {/* Screen-reader live region for phase announcements */}
+      <div
+        ref={liveRegionRef}
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      />
       <Header />
 
       <div
@@ -130,6 +191,35 @@ export default function Chat() {
           {/* Phase 3: Full chat mode */}
           {uiPhase === "chat" && (
             <>
+              {/* Restore banner */}
+              <AnimatePresence>
+                {showRestoreBanner && (
+                  <motion.div
+                    key="restore-banner"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 mb-3
+                      bg-clyde-50 dark:bg-clyde-950/60 border border-clyde-200/70 dark:border-clyde-800/50
+                      rounded-xl text-[13px] text-clyde-700 dark:text-clyde-300"
+                  >
+                    <span>Picking up where you left off</span>
+                    <button
+                      onClick={() => {
+                        setShowRestoreBanner(false);
+                        resetConversation();
+                        setUiPhase("hero");
+                        setTimeout(() => setUiPhase("typewriter"), 1400);
+                      }}
+                      className="flex-shrink-0 text-[12px] font-medium text-clyde-500 dark:text-clyde-400 hover:text-clyde-700 dark:hover:text-clyde-200 underline underline-offset-2 min-h-[36px] flex items-center"
+                    >
+                      Start over
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div
                 className="space-y-5 pt-1"
                 role="log"
@@ -141,8 +231,17 @@ export default function Chat() {
                 ))}
               </div>
 
+              {/* Starter scenarios — shown after welcome, before first user message */}
+              {!state.messages.some((m) => m.role === "user") && (
+                <StarterScenarios />
+              )}
+
               <TransitionCue />
               <ExplanationPanel />
+              {/* Show WhatElseCanAI in flexible phase if explanation was skipped */}
+              {state.phase === "flexible" && !state.explanationVisible && state.hasCompletedFirstFlow && (
+                <WhatElseCanAI />
+              )}
             </>
           )}
 

@@ -10,6 +10,8 @@ export const initialState: ConversationState = {
   showTransitionCue: false,
   explanationVisible: false,
   hasCompletedFirstFlow: false,
+  triedUseCases: [],
+  totalFlowsCompleted: 0,
 };
 
 export function conversationReducer(
@@ -83,6 +85,20 @@ export function conversationReducer(
       return {
         ...state,
         hasCompletedFirstFlow: true,
+      };
+
+    case "COMPLETE_USE_CASE":
+      return {
+        ...state,
+        triedUseCases: state.triedUseCases.includes(action.action)
+          ? state.triedUseCases
+          : [...state.triedUseCases, action.action],
+      };
+
+    case "INCREMENT_FLOWS":
+      return {
+        ...state,
+        totalFlowsCompleted: state.totalFlowsCompleted + 1,
       };
 
     case "RESET":
