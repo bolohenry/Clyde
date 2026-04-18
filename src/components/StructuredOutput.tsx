@@ -1,6 +1,6 @@
 "use client";
 
-import { StructuredContent } from "@/types";
+import { StructuredContent, StructuredItem } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback } from "react";
 
@@ -8,30 +8,71 @@ interface StructuredOutputProps {
   content: StructuredContent;
 }
 
-function getPlainText(content: StructuredContent): string {
+function getPlainText(content: StructuredContent, editedTexts: Record<string, string>): string {
   const lines = [content.title, ""];
   content.items.forEach((item, i) => {
+    const text = editedTexts[item.id] ?? item.text;
     if (content.type === "checklist") {
-      lines.push(`☐ ${item.text}`);
+      lines.push(`☐ ${text}`);
     } else if (content.type === "plan" || content.type === "breakdown") {
-      lines.push(`${i + 1}. ${item.text}`);
+      lines.push(`${i + 1}. ${text}`);
       item.subItems?.forEach((s) => lines.push(`   • ${s}`));
     } else if (content.type === "comparison") {
-      lines.push(`${item.text}`);
+      lines.push(text);
       item.subItems?.forEach((s) => lines.push(`  ${s}`));
     } else {
-      lines.push(item.text);
+      lines.push(text);
     }
   });
   return lines.join("\n");
 }
 
+function EditableText({
+  item,
+  className,
+  editedTexts,
+  onEdit,
+}: {
+  item: StructuredItem;
+  className: string;
+  editedTexts: Record<string, string>;
+  onEdit: (id: string, val: string) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const value = editedTexts[item.id] ?? item.text;
+
+  return (
+    <span
+      contentEditable
+      suppressContentEditableWarning
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => {
+        setFocused(false);
+        onEdit(item.id, e.currentTarget.textContent ?? "");
+      }}
+      className={`${className} outline-none rounded px-0.5 -mx-0.5
+        ${focused ? "ring-1 ring-clyde-300 dark:ring-clyde-700 bg-clyde-50/50 dark:bg-clyde-950/30" : "hover:bg-surface-100 dark:hover:bg-surface-800/50"}
+        cursor-text transition-all duration-100`}
+      title="Click to edit"
+      role="textbox"
+      aria-label="Edit item"
+    >
+      {value}
+    </span>
+  );
+}
+
 export default function StructuredOutput({ content }: StructuredOutputProps) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [editedTexts, setEditedTexts] = useState<Record<string, string>>({});
+
+  const handleEdit = useCallback((id: string, val: string) => {
+    setEditedTexts((prev) => ({ ...prev, [id]: val }));
+  }, []);
 
   const handleCopy = useCallback(async () => {
-    const text = getPlainText(content);
+    const text = getPlainText(content, editedTexts);
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -46,11 +87,11 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
     }
     setCopyState("copied");
     setTimeout(() => setCopyState("idle"), 2000);
-  }, [content]);
+  }, [content, editedTexts]);
 
   const handleShare = useCallback(async () => {
-    const text = getPlainText(content);
-    if (navigator.share) {
+    const text = getPlainText(content, editedTexts);
+    if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title: content.title, text });
         return;
@@ -59,7 +100,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
       }
     }
     handleCopy();
-  }, [content, handleCopy]);
+  }, [content, editedTexts, handleCopy]);
 
   const toggleCheck = (id: string) => {
     setCheckedItems((prev) => {
@@ -133,12 +174,12 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
       <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-2.5 sm:space-y-3">
         {content.type === "checklist" &&
           content.items.map((item, i) => (
-            <motion.label
+            <motion.div
               key={item.id}
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.12 + i * 0.05 }}
-              className="flex items-start gap-2.5 sm:gap-3 cursor-pointer group"
+              className="flex items-start gap-2.5 sm:gap-3 group"
             >
               <div className="mt-0.5 flex-shrink-0">
                 <input
@@ -147,18 +188,20 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
                   onChange={() => toggleCheck(item.id)}
                   className="w-4 h-4 rounded border-surface-300 dark:border-surface-600 text-clyde-500
                     focus:ring-clyde-400 focus:ring-offset-0 cursor-pointer accent-clyde-500"
+                  aria-label={`Mark "${editedTexts[item.id] ?? item.text}" as done`}
                 />
               </div>
-              <span
+              <EditableText
+                item={item}
+                editedTexts={editedTexts}
+                onEdit={handleEdit}
                 className={`text-[13px] sm:text-sm leading-relaxed transition-all duration-200 ${
                   checkedItems.has(item.id)
                     ? "line-through text-surface-500 dark:text-surface-400"
-                    : "text-surface-700 dark:text-surface-200 group-hover:text-surface-900 dark:group-hover:text-surface-100"
+                    : "text-surface-700 dark:text-surface-200"
                 }`}
-              >
-                {item.text}
-              </span>
-            </motion.label>
+              />
+            </motion.div>
           ))}
 
         {(content.type === "plan" || content.type === "breakdown") &&
@@ -176,9 +219,12 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
                   text-[10px] sm:text-xs font-semibold flex items-center justify-center mt-0.5">
                   {i + 1}
                 </span>
-                <span className="text-[13px] sm:text-sm font-medium text-surface-800 dark:text-surface-100 leading-snug">
-                  {item.text}
-                </span>
+                <EditableText
+                  item={item}
+                  editedTexts={editedTexts}
+                  onEdit={handleEdit}
+                  className="text-[13px] sm:text-sm font-medium text-surface-800 dark:text-surface-100 leading-snug"
+                />
               </div>
               {item.subItems && (
                 <ul className="ml-7 sm:ml-8 space-y-0.5 sm:space-y-1">
@@ -206,7 +252,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
               className="p-3 rounded-lg bg-[var(--surface-card-alt)] border border-[var(--surface-border)]"
             >
               <h4 className="text-[13px] sm:text-sm font-semibold text-surface-800 dark:text-surface-100 mb-1.5 sm:mb-2">
-                {item.text}
+                {editedTexts[item.id] ?? item.text}
               </h4>
               {item.subItems && (
                 <ul className="space-y-0.5 sm:space-y-1">
@@ -245,7 +291,19 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
               transition={{ delay: 0.15 }}
               className="p-3 sm:p-4 rounded-lg bg-[var(--surface-card-alt)] border border-[var(--surface-border)]"
             >
-              <p className="text-[13px] sm:text-sm text-surface-700 dark:text-surface-200 whitespace-pre-line leading-relaxed">
+              <p
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={(e) => handleEdit(item.id, e.currentTarget.textContent ?? "")}
+                className="text-[13px] sm:text-sm text-surface-700 dark:text-surface-200
+                  whitespace-pre-line leading-relaxed outline-none
+                  hover:bg-surface-100 dark:hover:bg-surface-800/50
+                  focus:ring-1 focus:ring-clyde-300 dark:focus:ring-clyde-700 rounded
+                  cursor-text transition-all duration-100"
+                title="Click to edit"
+                role="textbox"
+                aria-label="Edit draft"
+              >
                 {item.text}
               </p>
             </motion.div>

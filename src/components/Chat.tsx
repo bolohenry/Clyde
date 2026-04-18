@@ -11,6 +11,7 @@ import WhatElseCanAI from "./WhatElseCanAI";
 import Header from "./Header";
 import TypewriterMessage from "./TypewriterMessage";
 import ClydeAvatar from "./ClydeAvatar";
+import StarterScenarios from "./StarterScenarios";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Chat() {
@@ -229,6 +230,11 @@ export default function Chat() {
                   <ChatMessage key={message.id} message={message} />
                 ))}
               </div>
+
+              {/* Starter scenarios — shown after welcome, before first user message */}
+              {!state.messages.some((m) => m.role === "user") && (
+                <StarterScenarios />
+              )}
 
               <TransitionCue />
               <ExplanationPanel />
