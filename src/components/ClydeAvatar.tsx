@@ -37,92 +37,75 @@ export default function ClydeAvatar({
       className={`${s.container} flex-shrink-0`}
     >
       <svg
-        viewBox="0 0 100 110"
+        viewBox="-18 0 136 110"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full drop-shadow-md"
         aria-hidden="true"
       >
+        {/* ── CLOCHE / TRAY (left side, raised) ── */}
+        <path d="M-16 26 Q-15 8 4 7 Q23 8 24 26Z" fill="#E8E8E8" stroke="#C8C8C8" strokeWidth="1" />
+        <ellipse cx="4" cy="7" rx="4.5" ry="3.5" fill="#D0D0D0" stroke="#B8B8B8" strokeWidth="0.8" />
+        <ellipse cx="4" cy="28" rx="20" ry="4.5" fill="#D4D4D4" stroke="#B4B4B4" strokeWidth="1" />
+        <ellipse cx="4" cy="27" rx="18" ry="3" fill="#E0E0E0" />
+
         {/* ── SHOES ── */}
         <ellipse cx="34" cy="107" rx="11" ry="4" fill="#111827" />
         <ellipse cx="56" cy="107" rx="10" ry="4" fill="#111827" />
 
-        {/* ── LEGS / TROUSERS ── short and stout */}
+        {/* ── LEGS / TROUSERS ── */}
         <rect x="26" y="88" width="14" height="20" rx="4" fill="#1a2744" />
         <rect x="46" y="88" width="13" height="20" rx="4" fill="#1a2744" />
 
-        {/* ── JACKET BODY — wide, rotund belly ── */}
-        {/* Main mass */}
+        {/* ── JACKET BODY ── */}
         <ellipse cx="44" cy="72" rx="30" ry="24" fill="#1a2744" />
-        {/* Belly bulge */}
         <ellipse cx="42" cy="76" rx="22" ry="16" fill="#1f2f54" />
-        {/* Bottom fill to trousers */}
         <rect x="14" y="82" width="60" height="10" rx="0" fill="#1a2744" />
 
-        {/* ── LEFT ARM — hanging at side ── */}
+        {/* ── LEFT ARM — raised, holding cloche ── */}
         <path
-          d="M16 64 Q10 75 10 87"
+          d="M16 60 Q8 44 4 26"
           stroke="#1a2744"
           strokeWidth="11"
           fill="none"
           strokeLinecap="round"
         />
-        {/* Left shirt cuff */}
-        <ellipse cx="10" cy="88" rx="5" ry="3.5" fill="#f2ede8" transform="rotate(10 10 88)" />
-        {/* Left hand */}
-        <ellipse cx="10" cy="91" rx="5" ry="4" fill="#f5c4a1" transform="rotate(10 10 91)" />
+        <ellipse cx="4" cy="22" rx="6" ry="5" fill="#f5c4a1" transform="rotate(20 4 22)" />
 
-        {/* ── RIGHT ARM — raised, presenting gesture ── */}
+        {/* ── RIGHT ARM — hanging at side ── */}
         <path
-          d="M70 60 Q80 44 84 24"
+          d="M72 64 Q78 75 78 87"
           stroke="#1a2744"
           strokeWidth="11"
           fill="none"
           strokeLinecap="round"
         />
-        {/* Right shirt cuff */}
-        <ellipse cx="84" cy="22" rx="5.5" ry="3.5" fill="#f2ede8" transform="rotate(-20 84 22)" />
-        {/* Right hand — open, welcoming */}
-        <ellipse cx="84" cy="18" rx="6" ry="5" fill="#f5c4a1" transform="rotate(-20 84 18)" />
-        {/* Fingers suggestion */}
-        <path d="M80 15 Q82 11 84 14" stroke="#e8ad8a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-        <path d="M83 13 Q85 9 87 12" stroke="#e8ad8a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-        <path d="M86 15 Q88 11 89 15" stroke="#e8ad8a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+        <ellipse cx="78" cy="88" rx="5" ry="3.5" fill="#f2ede8" transform="rotate(-10 78 88)" />
+        <ellipse cx="78" cy="91" rx="5" ry="4" fill="#f5c4a1" transform="rotate(-10 78 91)" />
 
         {/* ── WHITE SHIRT FRONT ── */}
         <ellipse cx="44" cy="70" rx="7" ry="17" fill="#f2ede8" />
-        {/* Shirt buttons */}
         <circle cx="44" cy="63" r="1.2" fill="#ccc8c2" />
         <circle cx="44" cy="70" r="1.2" fill="#ccc8c2" />
         <circle cx="44" cy="77" r="1.2" fill="#ccc8c2" />
 
         {/* ── LAPELS ── */}
-        {/* Left lapel */}
         <path d="M37 57 L44 71 L37 83 L14 70 L14 57Z" fill="#1a2744" />
-        {/* Right lapel */}
         <path d="M51 57 L44 71 L51 83 L74 70 L74 57Z" fill="#1a2744" />
-
-        {/* Pocket square — right breast */}
         <path d="M60 58 L66 55 L68 59 L62 62Z" fill="white" opacity="0.6" />
-
-        {/* Collar points */}
         <path d="M37 57 L44 54 L51 57" fill="white" />
 
-        {/* ── BOW TIE ── */}
-        <path d="M36 54 L44 57.5 L36 61Z" fill="#9b2335" />
-        <path d="M52 54 L44 57.5 L52 61Z" fill="#9b2335" />
-        <circle cx="44" cy="57.5" r="2.5" fill="#6d1a26" />
+        {/* ── BOW TIE (brand blue) ── */}
+        <path d="M36 54 L44 57.5 L36 61Z" fill="#0c87f0" />
+        <path d="M52 54 L44 57.5 L52 61Z" fill="#0c87f0" />
+        <circle cx="44" cy="57.5" r="2.5" fill="#0a6ecb" />
 
         {/* ── NECK ── */}
         <rect x="39" y="50" width="10" height="7" rx="2" fill="#e8ad8a" />
 
-        {/* ── HEAD — round and jolly, slightly left of center ── */}
+        {/* ── HEAD ── */}
         <ellipse cx="48" cy="31" rx="24" ry="26" fill="#f5c4a1" />
-
-        {/* Forehead highlight */}
         <ellipse cx="42" cy="20" rx="11" ry="7" fill="white" opacity="0.14" />
-
-        {/* Rosy cheeks */}
         <circle cx="30" cy="37" r="7" fill="#e8909a" opacity="0.38" />
         <circle cx="66" cy="37" r="7" fill="#e8909a" opacity="0.38" />
 
@@ -132,7 +115,7 @@ export default function ClydeAvatar({
         {/* ── EYES ── */}
         <Eyes expression={expression} />
 
-        {/* ── MUSTACHE ── distinguished, full */}
+        {/* ── MUSTACHE ── */}
         <path
           d="M37 44 Q42 47 48 45 Q54 47 59 44"
           stroke="#7a5230"
