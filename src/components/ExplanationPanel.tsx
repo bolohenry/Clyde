@@ -4,6 +4,7 @@ import { useChatContext } from "@/context/ChatContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { SuggestionType } from "@/types";
 import WhatElseCanAI from "./WhatElseCanAI";
+import ContextualFollowUps from "./ContextualFollowUps";
 
 const USE_CASE_LABELS: Record<SuggestionType, string> = {
   plan: "Plan",
@@ -163,6 +164,9 @@ export default function ExplanationPanel() {
             </motion.button>
           </div>
         </div>
+
+        {/* Contextual follow-up suggestions */}
+        <ContextualFollowUps />
 
         {/* What else can AI do — available after first flow */}
         <WhatElseCanAI />

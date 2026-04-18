@@ -3,6 +3,15 @@ import { StructuredContent, StructuredItem } from "@/types";
 interface ParsedResponse {
   text: string;
   structured?: StructuredContent;
+  searchQuery?: string;
+}
+
+function extractSearchQuery(text: string): { text: string; searchQuery?: string } {
+  const searchMatch = text.match(/\[SEARCH:\s*(.+?)\]\s*$/m);
+  if (!searchMatch) return { text };
+  const searchQuery = searchMatch[1].trim();
+  const cleaned = text.slice(0, searchMatch.index).trimEnd();
+  return { text: cleaned, searchQuery };
 }
 
 export function parseResponse(raw: string): ParsedResponse {
@@ -11,7 +20,8 @@ export function parseResponse(raw: string): ParsedResponse {
   );
 
   if (!blockMatch) {
-    return { text: raw.trim() };
+    const { text, searchQuery } = extractSearchQuery(raw.trim());
+    return { text, searchQuery };
   }
 
   const blockType = blockMatch[1] as
@@ -21,12 +31,14 @@ export function parseResponse(raw: string): ParsedResponse {
     | "draft";
   const blockContent = blockMatch[2].trim();
   const textBefore = raw.slice(0, blockMatch.index).trim();
-  const textAfter = raw.slice(blockMatch.index! + blockMatch[0].length).trim();
+  const textAfterRaw = raw.slice(blockMatch.index! + blockMatch[0].length).trim();
+
+  const { text: textAfter, searchQuery } = extractSearchQuery(textAfterRaw);
   const text = [textBefore, textAfter].filter(Boolean).join("\n\n");
 
   const structured = parseStructuredBlock(blockType, blockContent);
 
-  return { text, structured };
+  return { text, structured, searchQuery };
 }
 
 function parseStructuredBlock(

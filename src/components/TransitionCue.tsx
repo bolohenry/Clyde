@@ -2,6 +2,7 @@
 
 import { useChatContext } from "@/context/ChatContext";
 import { motion } from "framer-motion";
+import ContextualFollowUps from "./ContextualFollowUps";
 
 export default function TransitionCue() {
   const { state, showExplanation, tryAnotherUseCase } = useChatContext();
@@ -60,6 +61,7 @@ export default function TransitionCue() {
           </div>
         </div>
       </div>
+      <ContextualFollowUps />
     </motion.div>
   );
 }

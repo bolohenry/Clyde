@@ -43,6 +43,8 @@ export interface Message {
   isError?: boolean;
   errorCode?: "rate_limit" | "llm_error" | "network" | "no_api_key";
   isInsight?: boolean; // renders as a centered callout, not a speech bubble
+  imageUrl?: string; // base64 data URL for attached image
+  searchQuery?: string;
 }
 
 export type ConversationPhase =

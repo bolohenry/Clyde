@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 240" fill="none">
+  <!-- ===== TRAY + CLOCHE (left side, raised) ===== -->
+  <!-- Cloche dome -->
+  <path d="M14 76 Q16 46 52 44 Q88 46 90 76 Z" fill="#E8E8E8" stroke="#C8C8C8" stroke-width="1.5"/>
+  <!-- Cloche highlight / shine -->
+  <path d="M28 66 Q30 50 50 47 Q66 47 72 56" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.65"/>
+  <!-- Cloche handle knob -->
+  <ellipse cx="52" cy="44" rx="7" ry="5.5" fill="#D0D0D0" stroke="#B8B8B8" stroke-width="1"/>
+  <ellipse cx="52" cy="42" rx="5" ry="3.5" fill="#DCDCDC"/>
+  <!-- Tray plate surface -->
+  <ellipse cx="52" cy="78" rx="38" ry="8" fill="#D4D4D4" stroke="#B4B4B4" stroke-width="1.5"/>
+  <ellipse cx="52" cy="75" rx="35" ry="6" fill="#E0E0E0"/>
+
+  <!-- ===== RAISED ARM - suit sleeve (character's right arm = left side of image) ===== -->
+  <path d="M102 148 C90 128 75 108 60 82" stroke="#1a2744" stroke-width="15" stroke-linecap="round" fill="none"/>
+  <!-- White shirt cuff -->
+  <path d="M63 85 C60 81 57 78 54 77" stroke="#f2ede8" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <!-- Hand -->
+  <ellipse cx="52" cy="75" rx="10" ry="8" fill="#f5c4a1"/>
+
+  <!-- ===== BODY (tuxedo) ===== -->
+  <!-- Main jacket -->
+  <ellipse cx="148" cy="162" rx="46" ry="36" fill="#1a2744"/>
+  <rect x="102" y="170" width="92" height="18" rx="2" fill="#1a2744"/>
+  <!-- White shirt front -->
+  <ellipse cx="148" cy="160" rx="10" ry="30" fill="#f2ede8"/>
+  <!-- Shirt buttons -->
+  <circle cx="148" cy="148" r="2.5" fill="#e0dcd6"/>
+  <circle cx="148" cy="161" r="2.5" fill="#e0dcd6"/>
+  <circle cx="148" cy="174" r="2.5" fill="#e0dcd6"/>
+  <!-- Left lapel -->
+  <path d="M102 148 L138 162 L130 183 L102 170 L102 148 Z" fill="#1a2744"/>
+  <!-- Right lapel -->
+  <path d="M194 148 L158 162 L166 183 L194 170 L194 148 Z" fill="#1a2744"/>
+  <!-- Collar points white -->
+  <path d="M136 148 L141 143 L148 148 Z" fill="#f2ede8"/>
+  <path d="M160 148 L155 143 L148 148 Z" fill="#f2ede8"/>
+
+  <!-- BOW TIE (brand blue: #0c87f0) -->
+  <path d="M131 143 L147 137 L147 149 Z" fill="#0c87f0"/>
+  <path d="M165 143 L149 137 L149 149 Z" fill="#0c87f0"/>
+  <circle cx="148" cy="143" r="5.5" fill="#0c87f0"/>
+
+  <!-- NECK -->
+  <rect x="140" y="122" width="18" height="28" rx="7" fill="#e8ad8a"/>
+
+  <!-- ===== HEAD ===== -->
+  <ellipse cx="152" cy="70" rx="42" ry="46" fill="#f5c4a1"/>
+
+  <!-- Cheeks (blush) -->
+  <circle cx="122" cy="78" r="12" fill="#e8909a" opacity="0.28"/>
+  <circle cx="180" cy="78" r="12" fill="#e8909a" opacity="0.28"/>
+
+  <!-- Hair -->
+  <path d="M112 62 C112 28 192 28 192 62 L192 50 C192 20 112 20 112 50 Z" fill="#4a2e1a"/>
+
+  <!-- Eyebrows -->
+  <path d="M124 54 Q134 49 144 52" stroke="#5a3820" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+  <path d="M158 52 Q168 48 178 52" stroke="#5a3820" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Eyes -->
+  <ellipse cx="135" cy="66" rx="8" ry="8.5" fill="white"/>
+  <circle cx="133" cy="67" r="5" fill="#3d2b1f"/>
+  <circle cx="131" cy="64" r="1.8" fill="white"/>
+
+  <ellipse cx="163" cy="64" rx="7.5" ry="8" fill="white"/>
+  <circle cx="161" cy="65" r="4.5" fill="#3d2b1f"/>
+  <circle cx="159" cy="63" r="1.6" fill="white"/>
+
+  <!-- Nose (slight leftward curve) -->
+  <path d="M146 78 C140 78 135 82 137 87" stroke="#d4956a" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+
+  <!-- Mustache (handlebar, prominent on left side) -->
+  <path d="M126 94 C120 89 117 94 122 97 C127 99 140 96 152 96" stroke="#4a2e1a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <path d="M152 96 C164 96 173 99 178 96 C182 93 180 88 175 91" stroke="#4a2e1a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Smile -->
+  <path d="M132 106 Q152 116 172 106" stroke="#c87050" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+  <!-- ===== DOWN ARM (character's left arm = right side of image) ===== -->
+  <path d="M190 155 C200 178 206 198 204 220" stroke="#1a2744" stroke-width="15" stroke-linecap="round" fill="none"/>
+  <!-- White cuff -->
+  <path d="M201 215 C202 219 204 222 204 225" stroke="#f2ede8" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <!-- Hand -->
+  <ellipse cx="204" cy="226" rx="10" ry="9" fill="#f5c4a1"/>
+
+  <!-- ===== LEGS ===== -->
+  <rect x="118" y="186" width="26" height="30" rx="6" fill="#1a2744"/>
+  <rect x="154" y="186" width="26" height="30" rx="6" fill="#1a2744"/>
+
+  <!-- ===== SHOES ===== -->
+  <ellipse cx="131" cy="215" rx="24" ry="9" fill="#111827"/>
+  <ellipse cx="167" cy="215" rx="24" ry="9" fill="#111827"/>
+  <!-- Shoe highlights -->
+  <path d="M110 212 Q122 208 130 212" stroke="#2a2a3a" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M146 212 Q158 208 166 212" stroke="#2a2a3a" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.5"/>
+</svg>

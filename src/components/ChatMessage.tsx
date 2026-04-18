@@ -139,17 +139,39 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       transition={{ duration: 0.3 }}
     >
       {isClyde ? (
-        <div className="flex items-end gap-2 sm:gap-2.5">
-          <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
-          <div className="relative max-w-[82%] sm:max-w-[78%]">
-            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-sm">
-              <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700 dark:text-surface-200">
-                {renderText(message.text)}
-              </span>
+        <>
+          <div className="flex items-end gap-2 sm:gap-2.5">
+            <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
+            <div className="relative max-w-[82%] sm:max-w-[78%]">
+              <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-sm">
+                <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700 dark:text-surface-200">
+                  {renderText(message.text)}
+                </span>
+              </div>
+              <SpeechTail side="left" />
             </div>
-            <SpeechTail side="left" />
           </div>
-        </div>
+          {!message.isTyping && !message.isError && message.searchQuery && (
+            <a
+              href={`https://google.com/search?q=${encodeURIComponent(message.searchQuery)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-2 ml-11 sm:ml-[52px] px-3 py-1.5 rounded-full
+                text-[12px] font-medium border transition-all duration-150 group
+                text-surface-600 dark:text-surface-300 bg-[var(--surface-card-alt)]
+                border-[var(--surface-border)] hover:border-clyde-300 dark:hover:border-clyde-700
+                hover:text-clyde-700 dark:hover:text-clyde-300 hover:bg-clyde-50 dark:hover:bg-clyde-950/40"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              {message.searchQuery}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="opacity-50 group-hover:opacity-100">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+          )}
+        </>
       ) : (
         <div className="flex items-end gap-2 sm:gap-2.5 justify-end">
           <div className="relative max-w-[82%] sm:max-w-[78%]">

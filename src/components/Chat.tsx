@@ -27,7 +27,6 @@ export default function Chat() {
   const [uiPhase, setUiPhase] = useState<"hero" | "typewriter" | "chat">(
     hasSavedConversation ? "chat" : "hero"
   );
-  const [showRestoreBanner, setShowRestoreBanner] = useState(hasSavedConversation);
 
   const scrollToBottom = useCallback((force = false) => {
     if (!scrollRef.current) return;
@@ -192,34 +191,6 @@ export default function Chat() {
           {uiPhase === "chat" && (
             <>
               {/* Restore banner */}
-              <AnimatePresence>
-                {showRestoreBanner && (
-                  <motion.div
-                    key="restore-banner"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center justify-between gap-3 px-4 py-2.5 mb-3
-                      bg-clyde-50 dark:bg-clyde-950/60 border border-clyde-200/70 dark:border-clyde-800/50
-                      rounded-xl text-[13px] text-clyde-700 dark:text-clyde-300"
-                  >
-                    <span>Picking up where you left off</span>
-                    <button
-                      onClick={() => {
-                        setShowRestoreBanner(false);
-                        resetConversation();
-                        setUiPhase("hero");
-                        setTimeout(() => setUiPhase("typewriter"), 1400);
-                      }}
-                      className="flex-shrink-0 text-[12px] font-medium text-clyde-500 dark:text-clyde-400 hover:text-clyde-700 dark:hover:text-clyde-200 underline underline-offset-2 min-h-[36px] flex items-center"
-                    >
-                      Start over
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               <div
                 className="space-y-5 pt-1"
                 role="log"

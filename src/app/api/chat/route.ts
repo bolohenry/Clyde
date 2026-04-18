@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
-import { buildMessages } from "@/engine/prompt";
+import { buildMessages, CLYDE_SYSTEM_PROMPT } from "@/engine/prompt";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { messages } = body as {
-    messages: { role: "user" | "assistant"; content: string }[];
+    messages: { role: "user" | "assistant"; content: string | unknown[] }[];
   };
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -68,15 +68,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Sanitize: only allow valid roles and string content
+  // Sanitize: allow string content or vision array content
   const sanitized = messages
-    .filter(
-      (m) =>
-        (m.role === "user" || m.role === "assistant") &&
-        typeof m.content === "string" &&
-        m.content.trim().length > 0
-    )
-    .map((m) => ({ role: m.role, content: m.content.trim().slice(0, 4000) }));
+    .filter((m) => (m.role === "user" || m.role === "assistant") && m.content)
+    .map((m) => {
+      if (typeof m.content === "string") {
+        if (!m.content.trim()) return null;
+        return { role: m.role, content: m.content.trim().slice(0, 4000) };
+      }
+      // Vision format: array of content parts
+      if (Array.isArray(m.content)) {
+        return { role: m.role, content: m.content };
+      }
+      return null;
+    })
+    .filter(Boolean) as { role: "user" | "assistant"; content: string | unknown[] }[];
 
   if (sanitized.length === 0) {
     return new Response(
@@ -85,7 +91,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const fullMessages = buildMessages(sanitized);
+  // Use gpt-4o when any message contains vision content (array format)
+  const hasVision = sanitized.some((m) => Array.isArray(m.content));
+  const model = hasVision ? "gpt-4o" : "gpt-4o-mini";
+
+  // For vision requests, prepend system prompt manually since buildMessages only accepts strings
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fullMessages: any[] = hasVision
+    ? [{ role: "system", content: CLYDE_SYSTEM_PROMPT }, ...sanitized]
+    : buildMessages(
+        sanitized.map((m) => ({
+          role: m.role,
+          content: m.content as string,
+        }))
+      );
 
   // Stream via SSE
   const encoder = new TextEncoder();
@@ -98,7 +117,7 @@ export async function POST(req: NextRequest) {
 
       try {
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
+          model,
           messages: fullMessages,
           temperature: 0.7,
           max_tokens: 600,

@@ -23,11 +23,12 @@ import {
 } from "@/engine/responses";
 import { parseResponse } from "@/engine/parser";
 import { usePersistence, loadPersistedState, clearPersistedState } from "@/hooks/usePersistence";
+import { track } from "@/lib/analytics";
 
 interface ChatContextValue {
   state: ConversationState;
   dispatch: React.Dispatch<ChatAction>;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string, imageUrl?: string) => void;
   selectChipAction: (action: SuggestionType) => void;
   showExplanation: () => void;
   tryAnotherUseCase: () => void;
@@ -47,10 +48,14 @@ function nextMsgId(): string {
   return `msg-${++msgCounter}`;
 }
 
+type LLMHistoryEntry =
+  | { role: "user" | "assistant"; content: string }
+  | { role: "user"; content: Array<{ type: "image_url"; image_url: { url: string } } | { type: "text"; text: string }> };
+
 // Consume SSE stream from /api/chat and call onDelta for each text chunk.
 // Returns the full accumulated text, or null if LLM not available.
 async function streamLLM(
-  history: { role: "user" | "assistant"; content: string }[],
+  history: LLMHistoryEntry[],
   onDelta: (text: string) => void,
   onError: (code: Message["errorCode"], message: string) => void
 ): Promise<string | null> {
@@ -141,12 +146,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const lastSendTimeRef = useRef(0);
   // Store last user message text + history for retry
   const lastUserMsgRef = useRef<string | null>(null);
-  const lastHistoryRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
+  const lastHistoryRef = useRef<LLMHistoryEntry[]>([]);
   const lastReplyIdRef = useRef<string | null>(null);
 
   const getConversationHistory = useCallback(
     (extraUserMsg?: string) => {
-      const history: { role: "user" | "assistant"; content: string }[] = [];
+      const history: LLMHistoryEntry[] = [];
       for (const m of state.messages) {
         if (m.isTyping || m.isError) continue;
         if (m.role === "clyde") {
@@ -203,7 +208,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const generateReply = useCallback(
     async (
       replyId: string,
-      history: { role: "user" | "assistant"; content: string }[],
+      history: LLMHistoryEntry[],
       currentState: ConversationState
     ) => {
       const llmResult = await streamLLM(
@@ -230,9 +235,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       if (llmResult) {
         llmAvailableRef.current = true;
         const parsed = parseResponse(llmResult);
-        finishMessage(replyId, parsed.text, { structured: parsed.structured });
+        finishMessage(replyId, parsed.text, { structured: parsed.structured, searchQuery: parsed.searchQuery });
 
         if (parsed.structured) {
+          track("structured_output_generated", { type: parsed.structured.type });
           dispatch({ type: "SET_PHASE", phase: "structured" });
           setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 2000);
         } else if (shouldTransition(currentState)) {
@@ -266,7 +272,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, imageUrl?: string) => {
       if (processingRef.current) return;
       const now = Date.now();
       if (now - lastSendTimeRef.current < 1500) return; // 1.5s cooldown
@@ -278,6 +284,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         role: "user",
         text,
         timestamp: Date.now(),
+        imageUrl: imageUrl || undefined,
       };
       dispatch({ type: "ADD_MESSAGE", message: userMessage });
       dispatch({ type: "INCREMENT_TURN" });
@@ -293,6 +300,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "SET_TONE", tone });
 
       if (state.phase === "welcome") {
+        track("conversation_started");
         dispatch({ type: "SET_PHASE", phase: "conversation" });
       }
 
@@ -312,7 +320,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       lastReplyIdRef.current = replyId;
       addTypingMessage(replyId);
 
-      const history = getConversationHistory(text);
+      const history = getConversationHistory();
+      // If image is attached, build a vision message as the last entry
+      if (imageUrl) {
+        history.push({
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: imageUrl } },
+            { type: "text", text: text || "What do you see?" },
+          ],
+        });
+      } else {
+        history.push({ role: "user", content: text });
+      }
       lastUserMsgRef.current = text;
       lastHistoryRef.current = history;
 
@@ -383,6 +403,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const selectChipAction = useCallback(
     async (action: SuggestionType) => {
+      track("use_case_selected", { use_case: action });
       dispatch({ type: "SELECT_ACTION", action });
       dispatch({ type: "SET_PHASE", phase: "structured" });
       dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
@@ -441,6 +462,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           llmAvailableRef.current = true;
           const parsed = parseResponse(llmResult);
           onSuccess(parsed.text, parsed.structured);
+          if (parsed.searchQuery) {
+            dispatch({ type: "UPDATE_MESSAGE", id: replyId, updates: { searchQuery: parsed.searchQuery } });
+          }
           return;
         }
 
@@ -461,6 +485,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
 
   const showExplanation = useCallback(() => {
+    track("explanation_viewed");
     dispatch({ type: "SET_PHASE", phase: "explanation" });
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
     dispatch({ type: "SHOW_EXPLANATION", show: true });
@@ -469,6 +494,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [dispatch]);
 
   const tryAnotherUseCase = useCallback(async () => {
+    track("try_another_use_case");
     dispatch({ type: "SET_PHASE", phase: "flexible" });
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
     dispatch({ type: "SHOW_EXPLANATION", show: false });
@@ -530,6 +556,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [dispatch]);
 
   const resetConversation = useCallback(() => {
+    track("start_over_clicked");
     processingRef.current = false;
     clearPersistedState();
     dispatch({ type: "RESET" });
