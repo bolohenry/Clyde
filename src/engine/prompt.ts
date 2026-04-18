@@ -60,6 +60,27 @@ Title or context
 The actual draft text goes here, written naturally.
 \`\`\`
 
+For a data table (comparing items across multiple attributes):
+\`\`\`table
+Table Title
+Name | Status | Priority
+Task A | Done | High
+Task B | In progress | Medium
+Task C | Not started | Low
+\`\`\`
+
+For a timeline or schedule (events/milestones in order):
+\`\`\`timeline
+Timeline Title
+## Day 1 – Morning
+- First thing to do
+- Second thing to do
+## Day 1 – Afternoon
+- Third thing
+## Day 2
+- Follow-up tasks
+\`\`\`
+
 Put conversational text before the structured block. The block is the deliverable.
 
 ## What you're not

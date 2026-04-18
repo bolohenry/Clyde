@@ -16,7 +16,7 @@ function extractSearchQuery(text: string): { text: string; searchQuery?: string 
 
 export function parseResponse(raw: string): ParsedResponse {
   const blockMatch = raw.match(
-    /```(checklist|plan|comparison|draft)\n([\s\S]*?)```/
+    /```(checklist|plan|comparison|draft|breakdown|table|timeline)\n([\s\S]*?)```/
   );
 
   if (!blockMatch) {
@@ -28,7 +28,10 @@ export function parseResponse(raw: string): ParsedResponse {
     | "checklist"
     | "plan"
     | "comparison"
-    | "draft";
+    | "draft"
+    | "breakdown"
+    | "table"
+    | "timeline";
   const blockContent = blockMatch[2].trim();
   const textBefore = raw.slice(0, blockMatch.index).trim();
   const textAfterRaw = raw.slice(blockMatch.index! + blockMatch[0].length).trim();
@@ -42,7 +45,7 @@ export function parseResponse(raw: string): ParsedResponse {
 }
 
 function parseStructuredBlock(
-  type: "checklist" | "plan" | "comparison" | "draft",
+  type: "checklist" | "plan" | "comparison" | "draft" | "breakdown" | "table" | "timeline",
   content: string
 ): StructuredContent {
   switch (type) {
@@ -54,6 +57,12 @@ function parseStructuredBlock(
       return parseComparison(content);
     case "draft":
       return parseDraft(content);
+    case "breakdown":
+      return parseBreakdown(content);
+    case "table":
+      return parseTable(content);
+    case "timeline":
+      return parseTimeline(content);
   }
 }
 
@@ -115,6 +124,38 @@ function parsePlan(content: string): StructuredContent {
   return { type: "plan", title, items };
 }
 
+function parseBreakdown(content: string): StructuredContent {
+  const lines = content.split("\n");
+  const title = lines[0]?.startsWith("#") ? "Breakdown" : lines.shift()?.trim() || "Breakdown";
+
+  const items: StructuredItem[] = [];
+  let currentItem: StructuredItem | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("## ") || trimmed.startsWith("### ")) {
+      if (currentItem) items.push(currentItem);
+      currentItem = {
+        id: `b${items.length}`,
+        text: trimmed.replace(/^#{2,3}\s*/, ""),
+        subItems: [],
+      };
+    } else if (trimmed.startsWith("- ") && currentItem) {
+      currentItem.subItems = currentItem.subItems || [];
+      currentItem.subItems.push(trimmed.replace(/^-\s*/, ""));
+    } else if (trimmed.startsWith("- ") && !currentItem) {
+      currentItem = {
+        id: `b${items.length}`,
+        text: trimmed.replace(/^-\s*/, ""),
+        subItems: [],
+      };
+    }
+  }
+  if (currentItem) items.push(currentItem);
+
+  return { type: "breakdown", title, items };
+}
+
 function parseComparison(content: string): StructuredContent {
   const lines = content.split("\n");
   const title = lines[0]?.startsWith("#") ? "Comparison" : lines.shift()?.trim() || "Comparison";
@@ -152,4 +193,69 @@ function parseDraft(content: string): StructuredContent {
     title,
     items: [{ id: "d1", text: body }],
   };
+}
+
+function parseTable(content: string): StructuredContent {
+  const lines = content.split("\n").filter((l) => l.trim());
+  const title = lines.shift()?.trim() || "Table";
+
+  // Normalize a pipe-separated line into an array of trimmed, non-empty cells
+  const parseCells = (line: string): string[] => {
+    const cells = line.split("|").map((c) => c.trim());
+    // Drop empty leading/trailing cells from surrounding pipes
+    const start = cells[0] === "" ? 1 : 0;
+    const end = cells[cells.length - 1] === "" ? cells.length - 1 : cells.length;
+    return cells.slice(start, end).filter(Boolean);
+  };
+
+  // Only process lines that contain pipes; skip markdown separator rows (---|:--- etc.)
+  const pipeLines = lines.filter(
+    (l) => l.includes("|") && !l.match(/^\s*[\|:\-\s]+$/)
+  );
+
+  const headerLine = pipeLines.shift();
+  const headers = headerLine ? parseCells(headerLine) : [];
+
+  const items: StructuredItem[] = pipeLines.map((l, i) => {
+    const cells = parseCells(l);
+    return {
+      id: `t${i}`,
+      text: cells[0] || "",
+      subItems: cells.slice(1),
+    };
+  });
+
+  return { type: "table", title, headers, items };
+}
+
+function parseTimeline(content: string): StructuredContent {
+  const lines = content.split("\n");
+  const title = lines[0]?.startsWith("#") ? "Timeline" : lines.shift()?.trim() || "Timeline";
+
+  const items: StructuredItem[] = [];
+  let currentItem: StructuredItem | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("## ") || trimmed.startsWith("### ")) {
+      if (currentItem) items.push(currentItem);
+      currentItem = {
+        id: `tl${items.length}`,
+        text: trimmed.replace(/^#{2,3}\s*/, ""),
+        subItems: [],
+      };
+    } else if (trimmed.startsWith("- ") && currentItem) {
+      currentItem.subItems = currentItem.subItems || [];
+      currentItem.subItems.push(trimmed.replace(/^-\s*/, ""));
+    } else if (trimmed.startsWith("- ") && !currentItem) {
+      currentItem = {
+        id: `tl${items.length}`,
+        text: trimmed.replace(/^-\s*/, ""),
+        subItems: [],
+      };
+    }
+  }
+  if (currentItem) items.push(currentItem);
+
+  return { type: "timeline", title, items };
 }

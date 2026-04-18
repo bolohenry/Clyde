@@ -13,6 +13,20 @@ interface StructuredOutputProps {
 
 function getPlainText(content: StructuredContent, editedTexts: Record<string, string>): string {
   const lines = [content.title, ""];
+
+  if (content.type === "table") {
+    if (content.headers?.length) {
+      lines.push(content.headers.join(" | "));
+      lines.push(content.headers.map(() => "---").join(" | "));
+    }
+    content.items.forEach((item) => {
+      const text = editedTexts[item.id] ?? item.text;
+      const cells = [text, ...(item.subItems || [])];
+      lines.push(cells.join(" | "));
+    });
+    return lines.join("\n");
+  }
+
   content.items.forEach((item, i) => {
     const text = editedTexts[item.id] ?? item.text;
     if (content.type === "checklist") {
@@ -20,6 +34,10 @@ function getPlainText(content: StructuredContent, editedTexts: Record<string, st
     } else if (content.type === "plan" || content.type === "breakdown") {
       lines.push(`${i + 1}. ${text}`);
       item.subItems?.forEach((s) => lines.push(`   • ${s}`));
+    } else if (content.type === "timeline") {
+      lines.push(`${text}`);
+      item.subItems?.forEach((s) => lines.push(`   • ${s}`));
+      lines.push("");
     } else if (content.type === "comparison") {
       lines.push(text);
       item.subItems?.forEach((s) => lines.push(`  ${s}`));
@@ -201,6 +219,28 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
           y += 4;
         }
 
+      } else if (displayContent.type === "timeline") {
+        doc.setFont("helvetica", "bold");
+        const lines = doc.splitTextToSize(`◆  ${text}`, maxW - 5);
+        if (y + lines.length * 7 > pageH - margin) { doc.addPage(); y = margin; }
+        doc.text(lines, margin, y);
+        y += lines.length * 7 + 3;
+
+        if (item.subItems?.length) {
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 100, 100);
+          item.subItems.forEach((sub) => {
+            const subLines = doc.splitTextToSize(`\u2022  ${sub}`, maxW - 12);
+            if (y + subLines.length * 6 > pageH - margin) { doc.addPage(); y = margin; }
+            doc.text(subLines, margin + 8, y);
+            y += subLines.length * 6 + 2;
+          });
+          doc.setTextColor(60, 60, 60);
+          y += 2;
+        }
+
+      } else if (displayContent.type === "table") {
+        // Handled separately below
       } else {
         // draft
         const lines = doc.splitTextToSize(text, maxW);
@@ -209,6 +249,41 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
         y += lines.length * 7 + 4;
       }
     });
+
+    // Table — rendered as a simple grid after the loop
+    if (displayContent.type === "table") {
+      const colCount = Math.max(
+        displayContent.headers?.length ?? 0,
+        ...displayContent.items.map((it) => 1 + (it.subItems?.length ?? 0))
+      );
+      const colW = maxW / Math.max(colCount, 1);
+
+      // Headers
+      if (displayContent.headers?.length) {
+        doc.setFont("helvetica", "bold");
+        doc.setFillColor(240, 244, 255);
+        doc.rect(margin, y - 4, maxW, 10, "F");
+        displayContent.headers.forEach((h, ci) => {
+          doc.text(h.slice(0, 20), margin + ci * colW, y);
+        });
+        y += 12;
+        doc.setFont("helvetica", "normal");
+      }
+
+      displayContent.items.forEach((item) => {
+        const rowText = editedTexts[item.id] ?? item.text;
+        const cells = [rowText, ...(item.subItems || [])];
+        if (y + 8 > pageH - margin) { doc.addPage(); y = margin; }
+        cells.forEach((cell, ci) => {
+          const cellLines = doc.splitTextToSize(cell, colW - 4);
+          doc.text(cellLines[0] ?? "", margin + ci * colW, y);
+        });
+        doc.setDrawColor(230, 230, 230);
+        doc.line(margin, y + 3, pageW - margin, y + 3);
+        y += 9;
+      });
+      y += 4;
+    }
 
     // Footer
     doc.setFontSize(8);
@@ -244,7 +319,10 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
             {displayContent.type === "checklist" ? "✅" :
              displayContent.type === "plan" ? "📋" :
              displayContent.type === "comparison" ? "⚖️" :
-             displayContent.type === "draft" ? "✏️" : "📋"}
+             displayContent.type === "draft" ? "✏️" :
+             displayContent.type === "breakdown" ? "🔍" :
+             displayContent.type === "table" ? "📊" :
+             displayContent.type === "timeline" ? "📅" : "📋"}
           </span>
           {displayContent.title}
         </h3>
@@ -446,6 +524,95 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
               </p>
             </motion.div>
           ))}
+
+        {displayContent.type === "table" && (
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-[12px] sm:text-[13px] border-collapse">
+              {displayContent.headers && displayContent.headers.length > 0 && (
+                <thead>
+                  <tr>
+                    {displayContent.headers.map((h, i) => (
+                      <th
+                        key={i}
+                        className="text-left px-2.5 sm:px-3 py-2 font-semibold
+                          text-surface-600 dark:text-surface-300
+                          border-b border-[var(--surface-border)]
+                          bg-[var(--surface-card-alt)]"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              )}
+              <tbody>
+                {displayContent.items.map((item, i) => (
+                  <motion.tr
+                    key={item.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 + i * 0.04 }}
+                    className="border-b border-[var(--surface-border)] last:border-0
+                      hover:bg-[var(--surface-card-alt)] transition-colors duration-100"
+                  >
+                    <td className="px-2.5 sm:px-3 py-2 text-surface-800 dark:text-surface-100 font-medium">
+                      {editedTexts[item.id] ?? item.text}
+                    </td>
+                    {item.subItems?.map((cell, j) => (
+                      <td key={j} className="px-2.5 sm:px-3 py-2 text-surface-600 dark:text-surface-300">
+                        {cell}
+                      </td>
+                    ))}
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {displayContent.type === "timeline" && (
+          <div>
+            {displayContent.items.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.12 + i * 0.07 }}
+                className="flex gap-3 sm:gap-4"
+              >
+                {/* Spine */}
+                <div className="flex flex-col items-center flex-shrink-0 w-5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-clyde-400 dark:bg-clyde-500 ring-2 ring-[var(--surface-card)] flex-shrink-0 mt-1" />
+                  {i < displayContent.items.length - 1 && (
+                    <div className="w-px bg-clyde-200 dark:bg-clyde-800 flex-1 mt-1 min-h-[20px]" />
+                  )}
+                </div>
+                {/* Content */}
+                <div className={`flex-1 ${i < displayContent.items.length - 1 ? "pb-4" : "pb-1"}`}>
+                  <EditableText
+                    item={item}
+                    editedTexts={editedTexts}
+                    onEdit={handleEdit}
+                    className="text-[13px] sm:text-sm font-medium text-surface-800 dark:text-surface-100 leading-snug"
+                  />
+                  {item.subItems && item.subItems.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {item.subItems.map((sub, j) => (
+                        <li
+                          key={j}
+                          className="text-[12px] sm:text-sm text-surface-500 dark:text-surface-400 flex items-start gap-1.5"
+                        >
+                          <span className="text-surface-400 dark:text-surface-500 mt-1 flex-shrink-0 text-[10px]">●</span>
+                          {sub}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Refine section */}

@@ -19,9 +19,10 @@ export interface ActionChip {
 }
 
 export interface StructuredContent {
-  type: "checklist" | "plan" | "comparison" | "draft" | "breakdown";
+  type: "checklist" | "plan" | "comparison" | "draft" | "breakdown" | "table" | "timeline";
   title: string;
   items: StructuredItem[];
+  headers?: string[]; // column headers for table type
 }
 
 export interface StructuredItem {
