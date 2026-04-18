@@ -74,7 +74,7 @@ export default function Chat() {
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto scrollbar-thin pt-16 sm:pt-20 pb-2"
+        className="flex-1 overflow-y-auto scrollbar-none pt-16 sm:pt-20 pb-2"
       >
         <div className="max-w-2xl mx-auto px-3 sm:px-4">
           {/* Phase 1: Meet Clyde — character-first hero */}
