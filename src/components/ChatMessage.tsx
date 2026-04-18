@@ -33,7 +33,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       >
         <ClydeAvatar size="sm" expression="thinking" />
         <div className="relative">
-          <div className="bg-white rounded-2xl rounded-bl-md border border-surface-200 shadow-sm">
+          <div className="bg-white dark:bg-surface-800 rounded-2xl rounded-bl-md border border-surface-200 dark:border-surface-700 shadow-sm">
             <TypingIndicator />
           </div>
           <SpeechTail side="left" />
@@ -48,7 +48,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       const rendered = boldParts.map((part, j) => {
         if (part.startsWith("**") && part.endsWith("**")) {
           return (
-            <strong key={j} className="font-semibold text-surface-800">
+            <strong key={j} className="font-semibold text-surface-800 dark:text-surface-100">
               {part.slice(2, -2)}
             </strong>
           );
@@ -76,8 +76,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <div className="flex items-end gap-2 sm:gap-2.5">
           <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
           <div className="relative max-w-[82%] sm:max-w-[78%]">
-            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white border border-surface-200 shadow-sm">
-              <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700">
+            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-sm">
+              <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700 dark:text-surface-200">
                 {renderText(message.text)}
               </span>
             </div>
@@ -110,13 +110,13 @@ function SpeechTail({ side }: { side: "left" | "right" }) {
   if (side === "left") {
     return (
       <svg
-        className="absolute -bottom-[1px] -left-[6px] w-4 h-3"
+        className="absolute -bottom-[1px] -left-[6px] w-4 h-3 speech-tail-left"
         viewBox="0 0 16 12"
         fill="none"
       >
         <path
           d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
-          fill="white"
+          className="fill-white dark:fill-surface-800"
         />
         <path
           d="M16 0 C16 0 8 0 4 4 C0 8 0 12 0 12 C0 12 4 8 8 6 C12 4 16 2 16 0Z"
@@ -124,10 +124,11 @@ function SpeechTail({ side }: { side: "left" | "right" }) {
           strokeWidth="1"
           fill="none"
           clipPath="inset(0 0 0 0)"
+          className="dark:stroke-surface-700"
         />
         <path
           d="M16 1 C16 1 9 1 5 4.5 C1.5 7.5 1 11 1 11 C1 11 4.5 7.5 8.5 5.5 C12.5 3.5 16 2 16 1Z"
-          fill="white"
+          className="fill-white dark:fill-surface-800"
         />
       </svg>
     );

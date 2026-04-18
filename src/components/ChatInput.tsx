@@ -71,16 +71,16 @@ export default function ChatInput() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
-      className="flex-shrink-0 bg-gradient-to-t from-surface-50 via-surface-50/95 to-surface-50/0 pt-3 pb-3 sm:pb-4 px-3 sm:px-4"
+      className="flex-shrink-0 bg-gradient-to-t from-surface-50 via-surface-50/95 to-surface-50/0 dark:from-surface-900 dark:via-surface-900/95 dark:to-surface-900/0 pt-3 pb-3 sm:pb-4 px-3 sm:px-4"
     >
       <div className="max-w-2xl mx-auto">
         <div
-          className={`flex items-end gap-2 bg-white rounded-2xl border shadow-sm
-            px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200
+          className={`flex items-center gap-2 bg-white dark:bg-surface-800 rounded-2xl border shadow-sm
+            px-3 sm:px-4 py-2.5 transition-all duration-200
             ${
               isWaitingForResponse
-                ? "border-surface-200 opacity-75"
-                : "border-surface-200 focus-within:border-clyde-300 focus-within:shadow-md"
+                ? "border-surface-200 dark:border-surface-700 opacity-75"
+                : "border-surface-200 dark:border-surface-700 focus-within:border-clyde-300 focus-within:shadow-md"
             }`}
         >
           <textarea
@@ -93,9 +93,8 @@ export default function ChatInput() {
             disabled={isWaitingForResponse}
             rows={1}
             aria-label="Message to Clyde"
-            className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 placeholder-surface-400
-              bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50
-              py-0.5"
+            className="flex-1 resize-none text-[15px] sm:text-sm text-surface-800 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500
+              bg-transparent outline-none leading-relaxed max-h-[120px] disabled:opacity-50"
           />
           <button
             onClick={handleSubmit}
@@ -121,7 +120,7 @@ export default function ChatInput() {
             </svg>
           </button>
         </div>
-        <p className="text-center text-[11px] sm:text-xs text-surface-400 mt-1.5 sm:mt-2">
+        <p className="text-center text-[11px] sm:text-xs text-surface-400 dark:text-surface-500 mt-1.5 sm:mt-2">
           Clyde helps you learn AI by doing real things — no experience needed
         </p>
       </div>

@@ -25,10 +25,10 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
-      className="mt-3 ml-11 sm:ml-[52px] mr-1 sm:mr-4 rounded-xl border border-surface-200 bg-white shadow-sm overflow-hidden"
+      className="mt-3 ml-11 sm:ml-[52px] mr-1 sm:mr-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-sm overflow-hidden"
     >
-      <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-surface-50/80 border-b border-surface-100">
-        <h3 className="text-[13px] sm:text-sm font-semibold text-surface-700">
+      <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-surface-50/80 dark:bg-surface-900/50 border-b border-surface-100 dark:border-surface-700">
+        <h3 className="text-[13px] sm:text-sm font-semibold text-surface-700 dark:text-surface-200">
           {content.title}
         </h3>
       </div>
@@ -56,8 +56,8 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
               <span
                 className={`text-[13px] sm:text-sm leading-relaxed transition-all duration-200 ${
                   checkedItems.has(item.id)
-                    ? "line-through text-surface-400"
-                    : "text-surface-700 group-hover:text-surface-900"
+                    ? "line-through text-surface-400 dark:text-surface-500"
+                    : "text-surface-700 dark:text-surface-200 group-hover:text-surface-900 dark:group-hover:text-surface-100"
                 }`}
               >
                 {item.text}
@@ -78,7 +78,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
                 <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-clyde-100 text-clyde-600 text-[10px] sm:text-xs font-semibold flex items-center justify-center mt-0.5">
                   {i + 1}
                 </span>
-                <span className="text-[13px] sm:text-sm font-medium text-surface-800 leading-snug">
+                <span className="text-[13px] sm:text-sm font-medium text-surface-800 dark:text-surface-100 leading-snug">
                   {item.text}
                 </span>
               </div>
@@ -87,7 +87,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
                   {item.subItems.map((sub, j) => (
                     <li
                       key={j}
-                      className="text-[12px] sm:text-sm text-surface-500 flex items-start gap-1.5 sm:gap-2"
+                      className="text-[12px] sm:text-sm text-surface-500 dark:text-surface-400 flex items-start gap-1.5 sm:gap-2"
                     >
                       <span className="text-surface-300 mt-1 flex-shrink-0 text-[10px]">
                         ●
@@ -107,9 +107,9 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15 + i * 0.1 }}
-              className="p-3 rounded-lg bg-surface-50 border border-surface-100"
+              className="p-3 rounded-lg bg-surface-50 dark:bg-surface-900/50 border border-surface-100 dark:border-surface-700"
             >
-              <h4 className="text-[13px] sm:text-sm font-semibold text-surface-800 mb-1.5 sm:mb-2">
+              <h4 className="text-[13px] sm:text-sm font-semibold text-surface-800 dark:text-surface-100 mb-1.5 sm:mb-2">
                 {item.text}
               </h4>
               {item.subItems && (

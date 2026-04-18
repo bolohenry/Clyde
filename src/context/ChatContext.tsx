@@ -6,6 +6,7 @@ import React, {
   useContext,
   useReducer,
   useRef,
+  useState,
 } from "react";
 import {
   ChatAction,
@@ -30,6 +31,8 @@ interface ChatContextValue {
   showExplanation: () => void;
   tryAnotherUseCase: () => void;
   startFreeform: () => void;
+  reset: () => void;
+  resetKey: number;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -58,6 +61,7 @@ async function callLLM(
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(conversationReducer, initialState);
+  const [resetKey, setResetKey] = useState(0);
   const processingRef = useRef(false);
   const llmAvailableRef = useRef<boolean | null>(null);
 
@@ -319,6 +323,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
   }, [dispatch]);
 
+  const reset = useCallback(() => {
+    processingRef.current = false;
+    dispatch({ type: "RESET" });
+    setResetKey((k) => k + 1);
+  }, [dispatch]);
+
   return (
     <ChatContext.Provider
       value={{
@@ -329,6 +339,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         showExplanation,
         tryAnotherUseCase,
         startFreeform,
+        reset,
+        resetKey,
       }}
     >
       {children}

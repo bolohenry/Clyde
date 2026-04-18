@@ -69,7 +69,7 @@ export default function Chat() {
   const welcomeText = generateWelcomeMessage().text;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-surface-50">
+    <div className="flex flex-col h-[100dvh] bg-surface-50 dark:bg-surface-900">
       <Header />
 
       <div
@@ -100,7 +100,7 @@ export default function Chat() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
-                  className="text-2xl sm:text-3xl font-semibold text-surface-800 mt-5 mb-2"
+                  className="text-2xl sm:text-3xl font-semibold text-surface-800 dark:text-surface-100 mt-5 mb-2"
                 >
                   {"Hey, I'm Clyde"}
                 </motion.h1>
@@ -108,7 +108,7 @@ export default function Chat() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.55, duration: 0.5 }}
-                  className="text-surface-500 text-sm sm:text-base max-w-xs leading-relaxed"
+                  className="text-surface-500 dark:text-surface-400 text-sm sm:text-base max-w-xs leading-relaxed"
                 >
                   I help people learn AI by doing real things — not lectures.
                 </motion.p>

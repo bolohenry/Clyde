@@ -20,8 +20,8 @@ export default function TransitionCue() {
     >
       <div className="relative rounded-2xl overflow-hidden">
         <div className="absolute inset-0 rounded-2xl animate-pulse-glow pointer-events-none" />
-        <div className="relative bg-white rounded-2xl border border-clyde-200/80 p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
-          <p className="text-[13px] sm:text-sm text-surface-600 text-center leading-relaxed">
+        <div className="relative bg-white dark:bg-surface-800 rounded-2xl border border-clyde-200/80 dark:border-clyde-900 p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
+          <p className="text-[13px] sm:text-sm text-surface-600 dark:text-surface-300 text-center leading-relaxed">
             {isPostStructured
               ? "You just used AI to turn a messy thought into something useful."
               : "You're getting the hang of this."}
@@ -45,8 +45,8 @@ export default function TransitionCue() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
               onClick={tryAnotherUseCase}
-              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white border border-surface-200
-                text-[13px] sm:text-sm font-medium text-surface-600 hover:bg-surface-50
+              className="flex-1 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white dark:bg-surface-700 border border-surface-200 dark:border-surface-600
+                text-[13px] sm:text-sm font-medium text-surface-600 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-600
                 hover:border-surface-300 active:bg-surface-100
                 transition-colors duration-150 flex items-center justify-center gap-2"
             >

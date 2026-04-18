@@ -59,7 +59,7 @@ export default function ExplanationPanel() {
         transition={{ duration: 0.5 }}
         className="mx-auto max-w-lg mt-4 mb-4"
       >
-        <div className="rounded-2xl bg-white border border-clyde-200 overflow-hidden shadow-sm">
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-clyde-200 dark:border-clyde-900 overflow-hidden shadow-sm">
           <div className="px-5 sm:px-6 py-4 bg-gradient-to-r from-clyde-500 to-clyde-600">
             <h3 className="text-white font-semibold text-base">
               How Clyde did that
@@ -80,11 +80,11 @@ export default function ExplanationPanel() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-base">{section.icon}</span>
-                  <h4 className="text-sm font-semibold text-surface-800">
+                  <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">
                     {section.title}
                   </h4>
                 </div>
-                <p className="text-sm text-surface-600 leading-relaxed ml-7">
+                <p className="text-sm text-surface-600 dark:text-surface-300 leading-relaxed ml-7">
                   {section.body}
                 </p>
               </motion.div>
