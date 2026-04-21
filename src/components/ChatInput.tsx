@@ -549,6 +549,13 @@ export default function ChatInput() {
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               onInput={handleInput}
+              onFocus={() => {
+                // After the soft keyboard finishes animating open (~300ms),
+                // scroll the input into view so it isn't hidden behind the keyboard
+                setTimeout(() => {
+                  inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                }, 300);
+              }}
               onPaste={(e) => {
                 const items = e.clipboardData?.items;
                 if (!items) return;

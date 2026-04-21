@@ -14,6 +14,7 @@ import ClydeAvatar from "./ClydeAvatar";
 import StarterScenarios from "./StarterScenarios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIdleNudge } from "@/hooks/useIdleNudge";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
 
 export default function Chat() {
   const { state, dispatch, resetConversation, hasSavedConversation } = useChatContext();
@@ -120,6 +121,10 @@ export default function Chat() {
 
   const welcomeText = generateWelcomeMessage().text;
 
+  // Keep app container sized to the visual viewport so the input bar stays
+  // above the soft keyboard on iOS Safari and Android Chrome
+  useVisualViewport();
+
   // Idle nudge — surfaces after 10s of no interaction in applicable phases
   const { nudge, dismissNudge } = useIdleNudge({
     messages: state.messages,
@@ -130,7 +135,7 @@ export default function Chat() {
   });
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-[var(--surface-page)] transition-colors duration-200">
+    <div style={{ height: "var(--app-height, 100dvh)" }} className="flex flex-col bg-[var(--surface-page)] transition-colors duration-200">
       {/* Screen-reader live region for phase announcements */}
       <div
         ref={liveRegionRef}

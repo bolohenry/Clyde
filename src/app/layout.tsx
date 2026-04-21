@@ -26,21 +26,14 @@ export const metadata: Metadata = {
     siteName: "Clyde",
     locale: "en_US",
     type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Clyde — Learn AI by doing real things",
-      },
-    ],
+    // og:image is auto-generated from src/app/opengraph-image.tsx
   },
   twitter: {
     card: "summary_large_image",
     title: "Clyde — Learn AI by doing real things",
     description:
       "Tell Clyde what's on your mind. He turns your messy thoughts into plans, to-dos, and drafts — and teaches you AI along the way.",
-    images: ["/og-image.png"],
+    // auto-populated from opengraph-image.tsx
   },
   icons: {
     icon: [

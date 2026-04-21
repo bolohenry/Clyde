@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { Message } from "@/types";
 import { motion } from "framer-motion";
 import TypingIndicator from "./TypingIndicator";
@@ -30,6 +31,41 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isClyde = message.role === "clyde";
   const { state, retryLastMessage } = useChatContext();
   const expression = getClydeExpression(state.phase, message.isTyping);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Cancel speech when message unmounts or text changes
+  useEffect(() => {
+    return () => {
+      if (utteranceRef.current && typeof window !== "undefined") {
+        window.speechSynthesis?.cancel();
+      }
+    };
+  }, []);
+
+  const handleSpeak = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    // Cancel any other message currently playing
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(message.text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const canSpeak = isClyde && !message.isTyping && !message.isError
+    && !message.isDivider && !message.isInsight && !!message.text
+    && typeof window !== "undefined" && "speechSynthesis" in (typeof window !== "undefined" ? window : {});
 
   if (message.isDivider) {
     return (
@@ -180,6 +216,43 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
             </a>
+          )}
+
+          {/* TTS — listen button */}
+          {canSpeak && (
+            <button
+              onClick={handleSpeak}
+              aria-label={isSpeaking ? "Stop reading" : "Listen to this message"}
+              title={isSpeaking ? "Stop" : "Listen"}
+              className={`mt-1.5 ml-11 sm:ml-[52px] inline-flex items-center gap-1.5
+                text-[11px] font-medium transition-all duration-150
+                ${isSpeaking
+                  ? "text-clyde-600 dark:text-clyde-400"
+                  : "text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300"
+                }`}
+            >
+              {isSpeaking ? (
+                <>
+                  <motion.svg
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 0.8 }}
+                    width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
+                  >
+                    <rect x="6" y="6" width="12" height="12" rx="1.5" />
+                  </motion.svg>
+                  Stop
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  </svg>
+                  Listen
+                </>
+              )}
+            </button>
           )}
         </>
       ) : (
