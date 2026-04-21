@@ -5,8 +5,20 @@ import { useChatContext } from "@/context/ChatContext";
 import { motion } from "framer-motion";
 
 // Minimal type for Web Speech API (not fully covered in lib.dom.d.ts for webkit)
+interface SpeechRecognitionResult {
+  readonly isFinal: boolean;
+  readonly [index: number]: { transcript: string };
+}
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  readonly [index: number]: SpeechRecognitionResult;
+}
 interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: string;
 }
 interface SpeechRecognitionInstance extends EventTarget {
   continuous: boolean;
@@ -14,9 +26,10 @@ interface SpeechRecognitionInstance extends EventTarget {
   lang: string;
   start(): void;
   stop(): void;
+  abort(): void;
   onstart: (() => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((e: SpeechRecognitionErrorEvent) => void) | null;
   onresult: ((e: SpeechRecognitionEvent) => void) | null;
 }
 declare global {
@@ -106,6 +119,9 @@ function FileTypeIcon({ type }: { type: string }) {
 export default function ChatInput() {
   const [text, setText] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const isListeningRef = useRef(false); // mirrors isListening for use inside callbacks
+  const accumulatedRef = useRef("");    // final transcript accumulated across restarts
+  const [micError, setMicError] = useState<string | null>(null);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
   const [fileLoading, setFileLoading] = useState(false);
@@ -250,39 +266,88 @@ export default function ChatInput() {
 
   // ── speech ────────────────────────────────────────────────────────────────
 
-  const toggleListening = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      return;
-    }
+  const startRecognition = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
     const recognition = new SR();
-    recognition.continuous = false;
-    recognition.interimResults = true;
+    recognition.continuous = true;      // keep recording through pauses
+    recognition.interimResults = true;  // show words as they're spoken
     recognition.lang = "en-US";
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+      isListeningRef.current = true;
+      setIsListening(true);
+    };
+
     recognition.onend = () => {
+      // iOS and some Android browsers stop the session after ~60s or on silence.
+      // Auto-restart if the user hasn't tapped stop.
+      if (isListeningRef.current) {
+        try {
+          recognition.start();
+          return;
+        } catch {
+          // Restart failed — fall through to cleanup
+        }
+      }
+      isListeningRef.current = false;
       setIsListening(false);
       recognitionRef.current = null;
+      accumulatedRef.current = "";
       setTimeout(resizeTextarea, 10);
     };
-    recognition.onerror = () => {
+
+    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      // 'no-speech' just means a pause — not a real error, let onend handle restart
+      if (e.error === "no-speech") return;
+      // 'aborted' means we called stop() intentionally
+      if (e.error === "aborted") return;
+      // Show user-friendly error for known failure modes
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        setMicError("Microphone access was denied. Check your browser or system settings.");
+      } else if (e.error === "audio-capture") {
+        setMicError("No microphone found. Plug one in and try again.");
+      } else if (e.error === "network") {
+        setMicError("Network error. Check your connection and try again.");
+      }
+      isListeningRef.current = false;
       setIsListening(false);
       recognitionRef.current = null;
+      accumulatedRef.current = "";
     };
+
     recognition.onresult = (e: SpeechRecognitionEvent) => {
-      const transcript = Array.from(e.results)
-        .map((r) => r[0].transcript)
-        .join("");
-      setText(transcript);
+      // Walk new results from resultIndex onwards
+      // Final results get committed to accumulatedRef; interim shown live
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result = e.results[i];
+        if (result.isFinal) {
+          accumulatedRef.current += result[0].transcript;
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      setText(accumulatedRef.current + interim);
       setTimeout(resizeTextarea, 10);
     };
 
     recognitionRef.current = recognition;
     recognition.start();
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      // User tapped stop — clean up
+      isListeningRef.current = false;
+      recognitionRef.current?.stop();
+      accumulatedRef.current = "";
+      return;
+    }
+    setMicError(null);
+    accumulatedRef.current = "";
+    startRecognition();
   };
 
   // ── placeholder ───────────────────────────────────────────────────────────
@@ -396,6 +461,22 @@ export default function ChatInput() {
             <p className="text-[11px] text-red-500 dark:text-red-400 pb-1.5 -mt-0.5">
               {fileError}
             </p>
+          )}
+
+          {/* ── Mic error ── */}
+          {micError && (
+            <div className="flex items-center justify-between gap-2 pb-1.5 -mt-0.5">
+              <p className="text-[11px] text-red-500 dark:text-red-400">{micError}</p>
+              <button
+                onClick={() => setMicError(null)}
+                aria-label="Dismiss mic error"
+                className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           )}
 
           {/* ── Input row ── */}
