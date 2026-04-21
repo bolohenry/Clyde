@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useChatContext } from "@/context/ChatContext";
 import { useDarkMode } from "@/context/DarkModeContext";
 import { ConversationPhase } from "@/types";
@@ -56,6 +57,24 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-1">
+          <Link
+            href="/create"
+            aria-label="Send to Clyde"
+            title="Send someone a link to Clyde"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+              text-surface-500 dark:text-surface-400
+              hover:text-surface-700 dark:hover:text-surface-200
+              hover:bg-surface-100 dark:hover:bg-surface-700
+              transition-all duration-150"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+            Send to Clyde
+          </Link>
+
           {hasStarted && (
             <button
               onClick={resetConversation}
@@ -67,17 +86,7 @@ export default function Header() {
                 hover:bg-surface-100 dark:hover:bg-surface-700
                 transition-all duration-150"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
               </svg>
