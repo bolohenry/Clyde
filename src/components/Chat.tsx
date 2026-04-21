@@ -19,7 +19,7 @@ import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { speakText } from "@/lib/tts";
 
 export default function Chat() {
-  const { state, dispatch, resetConversation, hasSavedConversation, setPendingInput } = useChatContext();
+  const { state, dispatch, sendMessage, resetConversation, hasSavedConversation, setPendingInput } = useChatContext();
   const scrollRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
   const userScrolledUpRef = useRef(false);
@@ -141,17 +141,48 @@ export default function Chat() {
     }
   }, [state.messages, autoPlay]);
 
-  // Pre-populate from ?ask= URL param (used by the /create share-to-Clyde flow)
+  // Pre-populate from ?ask= URL param (text-only share from /create)
   useEffect(() => {
     if (uiPhase !== "chat") return;
     const params = new URLSearchParams(window.location.search);
     const ask = params.get("ask");
     if (!ask) return;
-    // Remove from URL so a refresh doesn't re-fire it
     const clean = window.location.pathname;
     window.history.replaceState({}, "", clean);
     setPendingInput(decodeURIComponent(ask));
   }, [uiPhase, setPendingInput]);
+
+  // Handle ?link= URL param (file + text share from /create)
+  // Fetches payload from /api/link and auto-sends the message with any attachment
+  useEffect(() => {
+    if (uiPhase !== "chat") return;
+    const params = new URLSearchParams(window.location.search);
+    const linkId = params.get("link");
+    if (!linkId) return;
+    const clean = window.location.pathname;
+    window.history.replaceState({}, "", clean);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/link?id=${linkId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const { text, fileUrl, fileName } = data as {
+          text?: string;
+          fileUrl?: string;
+          fileName?: string;
+        };
+        if (fileUrl) {
+          // Auto-send: user message is immediately visible with the file attached
+          sendMessage(text?.trim() || "Can you help me with this?", fileUrl, undefined, fileName);
+        } else if (text) {
+          setPendingInput(text);
+        }
+      } catch {
+        // Silently ignore — link may have expired
+      }
+    })();
+  }, [uiPhase, sendMessage, setPendingInput]);
 
   // Idle nudge — surfaces after 10s of no interaction in applicable phases
   const { nudge, dismissNudge } = useIdleNudge({
