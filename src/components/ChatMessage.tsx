@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { Message } from "@/types";
 import { motion } from "framer-motion";
 import TypingIndicator from "./TypingIndicator";
@@ -8,6 +7,7 @@ import ActionChips from "./ActionChips";
 import StructuredOutput from "./StructuredOutput";
 import ClydeAvatar from "./ClydeAvatar";
 import { useChatContext } from "@/context/ChatContext";
+import { useTTS } from "@/hooks/useTTS";
 
 const ERROR_LABELS: Record<NonNullable<Message["errorCode"]>, string> = {
   rate_limit: "Rate limit hit — wait a moment then retry.",
@@ -31,41 +31,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isClyde = message.role === "clyde";
   const { state, retryLastMessage } = useChatContext();
   const expression = getClydeExpression(state.phase, message.isTyping);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-
-  // Cancel speech when message unmounts or text changes
-  useEffect(() => {
-    return () => {
-      if (utteranceRef.current && typeof window !== "undefined") {
-        window.speechSynthesis?.cancel();
-      }
-    };
-  }, []);
-
-  const handleSpeak = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-    // Cancel any other message currently playing
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(message.text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  };
+  const { speak, isSpeaking, isGenerating, kokoroLoading, kokoroProgress } = useTTS(message.id);
 
   const canSpeak = isClyde && !message.isTyping && !message.isError
-    && !message.isDivider && !message.isInsight && !!message.text
-    && typeof window !== "undefined" && "speechSynthesis" in (typeof window !== "undefined" ? window : {});
+    && !message.isDivider && !message.isInsight && !!message.text;
 
   if (message.isDivider) {
     return (
@@ -221,26 +190,38 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           {/* TTS — listen button */}
           {canSpeak && (
             <button
-              onClick={handleSpeak}
-              aria-label={isSpeaking ? "Stop reading" : "Listen to this message"}
-              title={isSpeaking ? "Stop" : "Listen"}
+              onClick={() => speak(message.text)}
+              aria-label={isSpeaking ? "Stop" : isGenerating ? "Generating audio" : "Listen"}
+              disabled={isGenerating}
               className={`mt-1.5 ml-11 sm:ml-[52px] inline-flex items-center gap-1.5
-                text-[11px] font-medium transition-all duration-150
+                text-[11px] font-medium transition-all duration-150 disabled:cursor-default
                 ${isSpeaking
                   ? "text-clyde-600 dark:text-clyde-400"
+                  : isGenerating
+                  ? "text-surface-400 dark:text-surface-500"
                   : "text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300"
                 }`}
             >
               {isSpeaking ? (
                 <>
                   <motion.svg
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ repeat: Infinity, duration: 0.8 }}
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ repeat: Infinity, duration: 0.9 }}
                     width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
                   >
                     <rect x="6" y="6" width="12" height="12" rx="1.5" />
                   </motion.svg>
                   Stop
+                </>
+              ) : isGenerating ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    className="w-3 h-3 border border-current border-t-transparent rounded-full"
+                    aria-hidden="true"
+                  />
+                  {kokoroLoading ? `Loading ${kokoroProgress}%` : "Generating…"}
                 </>
               ) : (
                 <>
