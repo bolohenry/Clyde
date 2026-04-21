@@ -17,7 +17,7 @@ import { useIdleNudge } from "@/hooks/useIdleNudge";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 
 export default function Chat() {
-  const { state, dispatch, resetConversation, hasSavedConversation } = useChatContext();
+  const { state, dispatch, resetConversation, hasSavedConversation, setPendingInput } = useChatContext();
   const scrollRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
   const userScrolledUpRef = useRef(false);
@@ -124,6 +124,18 @@ export default function Chat() {
   // Keep app container sized to the visual viewport so the input bar stays
   // above the soft keyboard on iOS Safari and Android Chrome
   useVisualViewport();
+
+  // Pre-populate from ?ask= URL param (used by the /create share-to-Clyde flow)
+  useEffect(() => {
+    if (uiPhase !== "chat") return;
+    const params = new URLSearchParams(window.location.search);
+    const ask = params.get("ask");
+    if (!ask) return;
+    // Remove from URL so a refresh doesn't re-fire it
+    const clean = window.location.pathname;
+    window.history.replaceState({}, "", clean);
+    setPendingInput(decodeURIComponent(ask));
+  }, [uiPhase, setPendingInput]);
 
   // Idle nudge — surfaces after 10s of no interaction in applicable phases
   const { nudge, dismissNudge } = useIdleNudge({
