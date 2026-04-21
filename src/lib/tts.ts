@@ -1,100 +1,85 @@
 /**
- * TTS singleton — manages Kokoro model loading and global audio coordination.
- * Only ever runs in the browser (never imported server-side).
+ * TTS singleton — Kokoro model loader, smart browser voice picker,
+ * and global audio coordinator.
+ *
+ * Call speakText(text, id) from anywhere.
+ * Subscribe to subscribeCurrentSpeaking() to know which message is active.
  */
 
-// ── Kokoro loader ─────────────────────────────────────────────────────────────
-// We use a local interface instead of `import type { KokoroTTS }` to avoid
-// webpack trying to resolve onnxruntime-node at build time.
-
+// ── Local type (avoids static import of kokoro-js which pulls onnxruntime-node) ──
 interface KokoroInstance {
   generate(text: string, opts?: { voice?: string; speed?: number }): Promise<{ toBlob(): Blob }>;
 }
 
+// ── Kokoro loader ─────────────────────────────────────────────────────────────
+
 export type KokoroStatus = "idle" | "loading" | "ready" | "failed";
 
-let _status: KokoroStatus = "idle";
-let _instance: KokoroInstance | null = null;
-let _loadPromise: Promise<KokoroInstance | null> | null = null;
-let _progress = 0;
+let _kokoroStatus: KokoroStatus = "idle";
+let _kokoroInstance: KokoroInstance | null = null;
+let _kokoroPromise: Promise<KokoroInstance | null> | null = null;
+let _kokoroProgress = 0;
 
-const _statusListeners = new Set<() => void>();
-
+const _kokoroListeners = new Set<() => void>();
 export function subscribeKokoro(fn: () => void): () => void {
-  _statusListeners.add(fn);
-  return () => { _statusListeners.delete(fn); };
+  _kokoroListeners.add(fn);
+  return () => { _kokoroListeners.delete(fn); };
 }
+function _notifyKokoro() { _kokoroListeners.forEach((fn) => fn()); }
 
-function _notify() {
-  _statusListeners.forEach((fn) => fn());
-}
-
-export const getKokoroStatus = () => _status;
-export const getKokoroProgress = () => _progress;
-export const getKokoroInstance = (): KokoroInstance | null => _instance;
+export const getKokoroStatus = () => _kokoroStatus;
+export const getKokoroProgress = () => _kokoroProgress;
 
 export async function loadKokoro(): Promise<KokoroInstance | null> {
-  if (_status === "ready") return _instance;
-  if (_status === "failed") return null;
-  if (_status === "loading" && _loadPromise) return _loadPromise;
+  if (_kokoroStatus === "ready") return _kokoroInstance;
+  if (_kokoroStatus === "failed") return null;
+  if (_kokoroStatus === "loading" && _kokoroPromise) return _kokoroPromise;
 
-  _status = "loading";
-  _progress = 0;
-  _notify();
+  _kokoroStatus = "loading";
+  _kokoroProgress = 0;
+  _notifyKokoro();
 
-  _loadPromise = (async () => {
+  _kokoroPromise = (async () => {
     try {
-      // Dynamic import keeps kokoro-js out of the initial bundle
       const { KokoroTTS } = await import("kokoro-js");
       const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
-        dtype: "q8", // ~20 MB quantized — good balance of size and quality
+        dtype: "q8",
         progress_callback: (info: Record<string, unknown>) => {
           const pct = typeof info.progress === "number" ? Math.round(info.progress) : 0;
-          if (pct !== _progress) {
-            _progress = pct;
-            _notify();
-          }
+          if (pct !== _kokoroProgress) { _kokoroProgress = pct; _notifyKokoro(); }
         },
       });
-      _instance = tts;
-      _status = "ready";
-      _notify();
-      return tts;
+      _kokoroInstance = tts as unknown as KokoroInstance;
+      _kokoroStatus = "ready";
+      _notifyKokoro();
+      return _kokoroInstance;
     } catch (err) {
-      console.warn("[Clyde TTS] Kokoro failed to load — falling back to browser voice.", err);
-      _status = "failed";
-      _notify();
+      console.warn("[Clyde TTS] Kokoro unavailable — using browser voice.", err);
+      _kokoroStatus = "failed";
+      _notifyKokoro();
       return null;
     }
   })();
 
-  return _loadPromise;
+  return _kokoroPromise;
 }
 
 // ── Smart browser voice picker ────────────────────────────────────────────────
-// Dramatically better quality on Apple devices where neural/premium voices exist.
 
 export function getBestBrowserVoice(): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
 
   const priorities: Array<(v: SpeechSynthesisVoice) => boolean> = [
-    // macOS / iOS premium neural voices
     (v) => /(Ava|Zoe).*(Premium)/i.test(v.name),
     (v) => /(Samantha|Karen|Moira).*(Enhanced)/i.test(v.name),
     (v) => /Siri/i.test(v.name),
-    // Windows / Edge neural voices
     (v) => /(Aria|Jenny|Davis|Guy).*(Online|Neural)/i.test(v.name),
-    // Any enhanced / premium / neural English voice
     (v) => v.lang.startsWith("en") && /(Premium|Enhanced|Neural|Online)/i.test(v.name),
-    // en-US fallback
     (v) => v.lang === "en-US",
-    // Any English
     (v) => v.lang.startsWith("en"),
   ];
-
   for (const pred of priorities) {
     const match = voices.find(pred);
     if (match) return match;
@@ -102,32 +87,79 @@ export function getBestBrowserVoice(): SpeechSynthesisVoice | null {
   return voices[0] ?? null;
 }
 
-// ── Global audio coordination — only one thing playing at a time ──────────────
+// ── Current-speaker tracking ──────────────────────────────────────────────────
+// "generating" = Kokoro is rendering audio, "playing" = audio is audible
+
+export type SpeakerState = { id: string; phase: "generating" | "playing" } | null;
+
+let _speaker: SpeakerState = null;
+const _speakerListeners = new Set<() => void>();
+
+export function getCurrentSpeaker(): SpeakerState { return _speaker; }
+export function subscribeCurrentSpeaking(fn: () => void): () => void {
+  _speakerListeners.add(fn);
+  return () => { _speakerListeners.delete(fn); };
+}
+function _setSpeaker(s: SpeakerState) {
+  if (_speaker?.id === s?.id && _speaker?.phase === s?.phase) return;
+  _speaker = s;
+  _speakerListeners.forEach((fn) => fn());
+}
+
+// ── Global audio reference ────────────────────────────────────────────────────
 
 let _currentAudio: HTMLAudioElement | null = null;
-const _stopHandlers = new Map<string, () => void>();
 
-export function registerSpeaker(id: string, onForcedStop: () => void): () => void {
-  _stopHandlers.set(id, onForcedStop);
-  return () => { _stopHandlers.delete(id); };
+export function stopAllAudio() {
+  if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _setSpeaker(null);
 }
 
-export function stopAllAudio(exceptId?: string) {
-  // Stop Web Speech API
-  if (typeof window !== "undefined") {
-    window.speechSynthesis?.cancel();
+// ── Main speak API ────────────────────────────────────────────────────────────
+
+export async function speakText(text: string, messageId: string): Promise<void> {
+  if (!text.trim()) return;
+
+  // Toggle off if already playing this message
+  if (_speaker?.id === messageId) { stopAllAudio(); return; }
+
+  stopAllAudio();
+
+  if (_kokoroStatus === "ready" && _kokoroInstance) {
+    _setSpeaker({ id: messageId, phase: "generating" });
+    try {
+      const result = await _kokoroInstance.generate(text, { voice: "af_heart" });
+      const blob = result.toBlob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      _currentAudio = audio;
+
+      audio.onplay = () => _setSpeaker({ id: messageId, phase: "playing" });
+      audio.onended = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+      audio.onerror = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+
+      await audio.play();
+    } catch {
+      _setSpeaker(null);
+      _speakWithBrowser(text, messageId);
+    }
+    return;
   }
-  // Stop any playing HTMLAudioElement
-  if (_currentAudio) {
-    _currentAudio.pause();
-    _currentAudio = null;
-  }
-  // Tell every other registered speaker to reset their state
-  _stopHandlers.forEach((stop, id) => {
-    if (id !== exceptId) stop();
-  });
+
+  // Browser voice (also kick off Kokoro loading for next time)
+  _speakWithBrowser(text, messageId);
+  if (_kokoroStatus === "idle") loadKokoro();
 }
 
-export function setCurrentAudio(el: HTMLAudioElement | null) {
-  _currentAudio = el;
+function _speakWithBrowser(text: string, messageId: string) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voice = getBestBrowserVoice();
+  if (voice) utterance.voice = voice;
+  utterance.rate = 0.95;
+  utterance.onstart = () => _setSpeaker({ id: messageId, phase: "playing" });
+  utterance.onend = () => _setSpeaker(null);
+  utterance.onerror = () => _setSpeaker(null);
+  window.speechSynthesis.speak(utterance);
 }

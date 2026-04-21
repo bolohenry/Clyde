@@ -31,7 +31,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isClyde = message.role === "clyde";
   const { state, retryLastMessage } = useChatContext();
   const expression = getClydeExpression(state.phase, message.isTyping);
-  const { speak, isSpeaking, isGenerating, kokoroLoading, kokoroProgress } = useTTS(message.id);
+  const { speak, isActive, isGenerating } = useTTS(message.id);
 
   const canSpeak = isClyde && !message.isTyping && !message.isError
     && !message.isDivider && !message.isInsight && !!message.text;
@@ -156,7 +156,34 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       {isClyde ? (
         <>
           <div className="flex items-end gap-2 sm:gap-2.5">
-            <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
+            {/* Avatar — tap to speak / stop */}
+            <button
+              onClick={canSpeak ? () => speak(message.text) : undefined}
+              disabled={!canSpeak}
+              aria-label={isActive ? "Stop" : "Listen to this message"}
+              className={`relative flex-shrink-0 rounded-full transition-all duration-150
+                ${canSpeak ? "cursor-pointer" : "cursor-default"}
+                ${isActive ? "ring-2 ring-clyde-400 dark:ring-clyde-500 ring-offset-1 ring-offset-[var(--surface-page)]" : ""}
+              `}
+            >
+              {/* Pulse ring while playing */}
+              {isActive && (
+                <motion.span
+                  className="absolute inset-0 rounded-full ring-2 ring-clyde-400 dark:ring-clyde-500"
+                  animate={{ scale: [1, 1.35], opacity: [0.6, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.2, ease: "easeOut" }}
+                />
+              )}
+              {/* Spinner overlay while Kokoro generates */}
+              {isGenerating && (
+                <motion.span
+                  className="absolute inset-0 rounded-full border-2 border-clyde-400 border-t-transparent"
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
+                />
+              )}
+              <ClydeAvatar size="sm" expression={expression} animate={!isWelcome} />
+            </button>
             <div className="relative max-w-[82%] sm:max-w-[78%]">
               <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-sm">
                 <span className="text-[15px] sm:text-sm leading-relaxed text-surface-700 dark:text-surface-200">
@@ -187,54 +214,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             </a>
           )}
 
-          {/* TTS — listen button */}
-          {canSpeak && (
-            <button
-              onClick={() => speak(message.text)}
-              aria-label={isSpeaking ? "Stop" : isGenerating ? "Generating audio" : "Listen"}
-              disabled={isGenerating}
-              className={`mt-1.5 ml-11 sm:ml-[52px] inline-flex items-center gap-1.5
-                text-[11px] font-medium transition-all duration-150 disabled:cursor-default
-                ${isSpeaking
-                  ? "text-clyde-600 dark:text-clyde-400"
-                  : isGenerating
-                  ? "text-surface-400 dark:text-surface-500"
-                  : "text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300"
-                }`}
-            >
-              {isSpeaking ? (
-                <>
-                  <motion.svg
-                    animate={{ scale: [1, 1.15, 1] }}
-                    transition={{ repeat: Infinity, duration: 0.9 }}
-                    width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-                  >
-                    <rect x="6" y="6" width="12" height="12" rx="1.5" />
-                  </motion.svg>
-                  Stop
-                </>
-              ) : isGenerating ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    className="w-3 h-3 border border-current border-t-transparent rounded-full"
-                    aria-hidden="true"
-                  />
-                  {kokoroLoading ? `Loading ${kokoroProgress}%` : "Generating…"}
-                </>
-              ) : (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                  </svg>
-                  Listen
-                </>
-              )}
-            </button>
-          )}
         </>
       ) : (
         <div className="flex flex-col items-end gap-1.5">

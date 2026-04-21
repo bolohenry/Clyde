@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useChatContext } from "@/context/ChatContext";
 import { useDarkMode } from "@/context/DarkModeContext";
+import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { ConversationPhase } from "@/types";
 import ClydeAvatar from "./ClydeAvatar";
 
@@ -22,6 +23,7 @@ function phaseToExpression(phase: ConversationPhase): "neutral" | "thinking" | "
 export default function Header() {
   const { state, resetConversation } = useChatContext();
   const { isDark, toggle } = useDarkMode();
+  const { autoPlay, toggle: toggleAutoPlay } = useAutoPlay();
   const [expression, setExpression] = useState<"neutral" | "thinking" | "happy" | "excited">(
     phaseToExpression(state.phase)
   );
@@ -93,6 +95,34 @@ export default function Header() {
               Start over
             </button>
           )}
+
+          <button
+            onClick={toggleAutoPlay}
+            aria-label={autoPlay ? "Auto-play on — tap to turn off" : "Auto-play off — tap to turn on"}
+            title={autoPlay ? "Auto-play on" : "Auto-play off"}
+            className={`w-8 h-8 flex items-center justify-center rounded-full
+              transition-all duration-150
+              ${autoPlay
+                ? "text-clyde-500 dark:text-clyde-400 bg-clyde-50 dark:bg-clyde-950/40 hover:bg-clyde-100 dark:hover:bg-clyde-900/40"
+                : "text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700"
+              }`}
+          >
+            {autoPlay ? (
+              /* Speaker with waves — active */
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+            ) : (
+              /* Speaker with X — muted */
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <line x1="23" y1="9" x2="17" y2="15"/>
+                <line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            )}
+          </button>
 
           <button
             onClick={toggle}

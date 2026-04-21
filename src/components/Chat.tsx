@@ -15,6 +15,8 @@ import StarterScenarios from "./StarterScenarios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIdleNudge } from "@/hooks/useIdleNudge";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
+import { useAutoPlay } from "@/hooks/useAutoPlay";
+import { speakText } from "@/lib/tts";
 
 export default function Chat() {
   const { state, dispatch, resetConversation, hasSavedConversation, setPendingInput } = useChatContext();
@@ -124,6 +126,20 @@ export default function Chat() {
   // Keep app container sized to the visual viewport so the input bar stays
   // above the soft keyboard on iOS Safari and Android Chrome
   useVisualViewport();
+
+  // Auto-play: speak new Clyde messages as they arrive
+  const { autoPlay } = useAutoPlay();
+  const prevMsgCountRef = useRef(0);
+  useEffect(() => {
+    const msgs = state.messages;
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = msgs.length;
+    if (!autoPlay || msgs.length <= prev) return;
+    const last = msgs[msgs.length - 1];
+    if (last && last.role === "clyde" && !last.isTyping && !last.isError && !last.isDivider && !last.isInsight && last.text) {
+      speakText(last.text, last.id);
+    }
+  }, [state.messages, autoPlay]);
 
   // Pre-populate from ?ask= URL param (used by the /create share-to-Clyde flow)
   useEffect(() => {
