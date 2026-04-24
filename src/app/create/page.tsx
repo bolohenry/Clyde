@@ -166,7 +166,7 @@ export default function CreatePage() {
         {pageState !== "done" ? (
           <>
             <h1 className="text-2xl font-semibold text-[#1c1917] dark:text-surface-100 mb-1">
-              Send someone to Clyde
+              Let me ask Clyde
             </h1>
             <p className="text-[#78716c] dark:text-surface-400 text-sm mb-6 leading-relaxed">
               Paste what they said — or attach a screenshot or file. You&apos;ll get a link.

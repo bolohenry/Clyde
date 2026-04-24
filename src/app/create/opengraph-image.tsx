@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Send someone to Clyde";
+export const alt = "Let me ask Clyde";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -61,7 +61,7 @@ export default function OGImage() {
             textAlign: "center",
           }}
         >
-          Send someone to Clyde
+          Let me ask Clyde
         </div>
 
         {/* Subtext */}

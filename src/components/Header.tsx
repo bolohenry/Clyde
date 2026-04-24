@@ -63,7 +63,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <Link
             href="/create"
-            aria-label="Send to Clyde"
+            aria-label="Let me ask Clyde"
             title="Send someone a link to Clyde"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
               text-surface-500 dark:text-surface-400
@@ -76,7 +76,7 @@ export default function Header() {
               <polyline points="16 6 12 2 8 6"/>
               <line x1="12" y1="2" x2="12" y2="15"/>
             </svg>
-            Send to Clyde
+            Let me ask Clyde
           </Link>
 
           {hasStarted && (
