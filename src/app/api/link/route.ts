@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
+import { put, list } from "@vercel/blob";
 
 /**
  * /api/link — stores and retrieves "Send to Clyde" link payloads.
  *
- * Distinct from /api/share (which holds structured output cards).
- * This stores free-text + optional file URL for the /create → /?link= flow.
+ * Uses Vercel Blob when BLOB_READ_WRITE_TOKEN is present (production),
+ * falls back to in-memory for local dev.
  *
  * POST { text, fileUrl?, fileName?, fileType? } → { id }
  * GET  ?id=[id]                                 → { text, fileUrl?, fileName?, fileType? }
@@ -17,38 +18,13 @@ export type LinkPayload = {
   fileType?: string;
 };
 
-// ── Vercel KV (same pattern as /api/share) ────────────────────────────────────
-type KVStore = {
-  get: <T>(key: string) => Promise<T | null>;
-  set: (key: string, value: unknown, opts?: { ex?: number }) => Promise<unknown>;
-};
-
-let kvCache: KVStore | null | undefined = undefined;
-
-async function getKV(): Promise<KVStore | null> {
-  if (kvCache !== undefined) return kvCache;
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-    kvCache = null;
-    return null;
-  }
-  try {
-    const mod = await import("@vercel/kv");
-    kvCache = mod.kv as KVStore;
-    return kvCache;
-  } catch {
-    kvCache = null;
-    return null;
-  }
-}
-
-// ── In-memory fallback (resets on cold start — fine for local dev) ─────────────
-const store = new Map<string, { payload: LinkPayload; expiresAt: number }>();
-
 function generateId(): string {
   return Math.random().toString(36).slice(2, 9);
 }
 
-const TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+// ── In-memory fallback (local dev only) ───────────────────────────────────────
+const store = new Map<string, { payload: LinkPayload; expiresAt: number }>();
+const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ── POST ──────────────────────────────────────────────────────────────────────
 
@@ -69,12 +45,15 @@ export async function POST(req: NextRequest) {
   };
 
   const id = generateId();
-  const db = await getKV();
 
-  if (db) {
-    await db.set(`link:${id}`, payload, { ex: TTL_SECONDS });
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    await put(`links/${id}.json`, JSON.stringify(payload), {
+      access: "public",
+      contentType: "application/json",
+      addRandomSuffix: false,
+    });
   } else {
-    store.set(id, { payload, expiresAt: Date.now() + TTL_SECONDS * 1000 });
+    store.set(id, { payload, expiresAt: Date.now() + TTL_MS });
   }
 
   return new Response(JSON.stringify({ id }), {
@@ -93,16 +72,16 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const db = await getKV();
-
-  if (db) {
-    const payload = await db.get<LinkPayload>(`link:${id}`);
-    if (!payload) {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { blobs } = await list({ prefix: `links/${id}` });
+    if (!blobs.length) {
       return new Response(JSON.stringify({ error: "Not found or expired" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
     }
+    const res = await fetch(blobs[0].url);
+    const payload = await res.json();
     return new Response(JSON.stringify(payload), {
       headers: { "Content-Type": "application/json" },
     });
