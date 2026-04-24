@@ -9,7 +9,7 @@ const ACCEPTED = ["image/jpeg", "image/png", "image/gif", "image/webp", "applica
 
 type AttachedFile = {
   file: File;
-  previewUrl: string | null; // object URL for images, null for docs
+  previewUrl: string | null;
 };
 
 type PageState = "compose" | "uploading" | "done" | "error";
@@ -58,7 +58,6 @@ export default function CreatePage() {
     setErrorMsg(null);
     const isImage = file.type.startsWith("image/");
     const previewUrl = isImage ? URL.createObjectURL(file) : null;
-    // Revoke any existing preview
     setAttached((prev) => {
       if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
       return { file, previewUrl };
@@ -90,7 +89,6 @@ export default function CreatePage() {
   const handleCreate = async () => {
     if (!canSubmit) return;
 
-    // Fast path: text-only, no server round-trip needed
     if (!attached) {
       const encoded = encodeURIComponent(text.trim());
       setLink(`${window.location.origin}/?ask=${encoded}`);
@@ -99,12 +97,10 @@ export default function CreatePage() {
       return;
     }
 
-    // Slow path: upload file → store link payload
     setPageState("uploading");
     setErrorMsg(null);
 
     try {
-      // 1. Upload file
       const form = new FormData();
       form.append("file", attached.file);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
@@ -114,7 +110,6 @@ export default function CreatePage() {
       }
       const { url: fileUrl, fileName } = await uploadRes.json();
 
-      // 2. Store link payload
       const linkRes = await fetch("/api/link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,7 +151,7 @@ export default function CreatePage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#1a1714] flex flex-col items-center justify-center px-4 py-12 transition-colors duration-200">
       <div className="w-full max-w-lg">
 
         {/* Header */}
@@ -165,15 +160,15 @@ export default function CreatePage() {
             group-hover:bg-[#0a75d1] transition-colors">
             <span className="text-white text-sm font-bold">C</span>
           </div>
-          <span className="text-sm font-semibold text-[#1c1917]">Clyde</span>
+          <span className="text-sm font-semibold text-[#1c1917] dark:text-surface-100">Clyde</span>
         </Link>
 
         {pageState !== "done" ? (
           <>
-            <h1 className="text-2xl font-semibold text-[#1c1917] mb-1">
+            <h1 className="text-2xl font-semibold text-[#1c1917] dark:text-surface-100 mb-1">
               Send someone to Clyde
             </h1>
-            <p className="text-[#78716c] text-sm mb-6 leading-relaxed">
+            <p className="text-[#78716c] dark:text-surface-400 text-sm mb-6 leading-relaxed">
               Paste what they said — or attach a screenshot or file. You&apos;ll get a link.
               When they click it, Clyde opens ready to help.
             </p>
@@ -183,47 +178,60 @@ export default function CreatePage() {
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Paste what they said..."
+                placeholder={attached ? "Optional — add context..." : "Paste what they said..."}
                 rows={5}
-                className="w-full resize-none rounded-xl border border-[#e7e5e4]
-                  bg-white px-4 py-3.5 text-[15px] text-[#1c1917]
-                  placeholder-[#a8a29e] outline-none leading-relaxed
+                className="w-full resize-none rounded-xl
+                  border border-[#e7e5e4] dark:border-surface-700
+                  bg-white dark:bg-surface-800
+                  px-4 py-3.5 text-[15px]
+                  text-[#1c1917] dark:text-surface-100
+                  placeholder-[#a8a29e] dark:placeholder-surface-500
+                  outline-none leading-relaxed
                   focus:border-[#0c87f0] focus:ring-2 focus:ring-[#0c87f0]/10
                   transition-all duration-150"
               />
               <span className={`absolute bottom-3 right-3 text-[11px] tabular-nums
-                ${overLimit ? "text-red-500" : "text-[#a8a29e]"}`}>
+                ${overLimit ? "text-red-500" : "text-[#a8a29e] dark:text-surface-600"}`}>
                 {remaining}
               </span>
             </div>
 
             {/* File attachment area */}
             {attached ? (
-              /* Attachment preview */
-              <div className="mt-2 flex items-center gap-3 p-3 rounded-xl border border-[#e7e5e4] bg-white">
+              <div className="mt-2 flex items-center gap-3 p-3 rounded-xl
+                border border-[#e7e5e4] dark:border-surface-700
+                bg-white dark:bg-surface-800">
                 {attached.previewUrl ? (
-                  /* Image preview */
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={attached.previewUrl}
                     alt="Attachment preview"
-                    className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-[#e7e5e4]"
+                    className="w-14 h-14 rounded-lg object-cover flex-shrink-0
+                      border border-[#e7e5e4] dark:border-surface-700"
                   />
                 ) : (
-                  /* Doc icon */
-                  <div className="w-14 h-14 rounded-lg bg-[#f5f5f4] flex items-center justify-center flex-shrink-0 text-[#78716c]">
+                  <div className="w-14 h-14 rounded-lg bg-[#f5f5f4] dark:bg-surface-700
+                    flex items-center justify-center flex-shrink-0
+                    text-[#78716c] dark:text-surface-400">
                     <FileIcon />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[#1c1917] truncate">{attached.file.name}</p>
-                  <p className="text-[11px] text-[#a8a29e] mt-0.5">{formatBytes(attached.file.size)}</p>
+                  <p className="text-[13px] font-medium text-[#1c1917] dark:text-surface-100 truncate">
+                    {attached.file.name}
+                  </p>
+                  <p className="text-[11px] text-[#a8a29e] dark:text-surface-500 mt-0.5">
+                    {formatBytes(attached.file.size)}
+                  </p>
                 </div>
                 <button
                   onClick={removeAttachment}
                   aria-label="Remove attachment"
                   className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center
-                    text-[#a8a29e] hover:text-[#1c1917] hover:bg-[#f5f5f4] transition-colors"
+                    text-[#a8a29e] dark:text-surface-500
+                    hover:text-[#1c1917] dark:hover:text-surface-100
+                    hover:bg-[#f5f5f4] dark:hover:bg-surface-700
+                    transition-colors"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -232,7 +240,6 @@ export default function CreatePage() {
                 </button>
               </div>
             ) : (
-              /* Drop zone */
               <div
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -244,10 +251,10 @@ export default function CreatePage() {
                 aria-label="Attach an image or file"
                 className={`mt-2 flex items-center justify-center gap-2 p-3.5 rounded-xl
                   border-2 border-dashed cursor-pointer select-none transition-all duration-150
-                  text-[13px] text-[#a8a29e] hover:text-[#78716c]
+                  text-[13px]
                   ${isDragging
                     ? "border-[#0c87f0] bg-[#0c87f0]/5 text-[#0c87f0]"
-                    : "border-[#e7e5e4] bg-white hover:border-[#c7c4c0]"
+                    : "border-[#e7e5e4] dark:border-surface-700 bg-white dark:bg-surface-800 text-[#a8a29e] dark:text-surface-500 hover:text-[#78716c] dark:hover:text-surface-400 hover:border-[#c7c4c0] dark:hover:border-surface-600"
                   }`}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -257,7 +264,7 @@ export default function CreatePage() {
                   <polyline points="21 15 16 10 5 21"/>
                 </svg>
                 Add an image or file
-                <span className="text-[11px] text-[#c7c4c0]">· up to {MAX_FILE_MB} MB</span>
+                <span className="text-[11px] text-[#c7c4c0] dark:text-surface-600">· up to {MAX_FILE_MB} MB</span>
               </div>
             )}
 
@@ -271,9 +278,10 @@ export default function CreatePage() {
               aria-hidden="true"
             />
 
-            {/* Error */}
             {errorMsg && (
-              <p className="mt-2.5 text-[13px] text-red-600 leading-snug">{errorMsg}</p>
+              <p className="mt-2.5 text-[13px] text-red-600 dark:text-red-400 leading-snug">
+                {errorMsg}
+              </p>
             )}
 
             <button
@@ -297,14 +305,17 @@ export default function CreatePage() {
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-semibold text-[#1c1917] mb-1">Link ready</h1>
-            <p className="text-[#78716c] text-sm mb-6 leading-relaxed">
-              Send this to them. When they click it, Clyde opens{attached ? " with their message and file" : " with their message"} already loaded.
+            <h1 className="text-2xl font-semibold text-[#1c1917] dark:text-surface-100 mb-1">
+              Link ready
+            </h1>
+            <p className="text-[#78716c] dark:text-surface-400 text-sm mb-6 leading-relaxed">
+              Send this to them. When they click it, Clyde opens
+              {attached ? " with their message and file" : " with their message"} already loaded.
             </p>
 
-            {/* Link box */}
-            <div className="rounded-xl border border-[#e7e5e4] bg-white p-4 mb-3">
-              <p className="text-[13px] text-[#78716c] break-all leading-relaxed select-all">
+            <div className="rounded-xl border border-[#e7e5e4] dark:border-surface-700
+              bg-white dark:bg-surface-800 p-4 mb-3">
+              <p className="text-[13px] text-[#78716c] dark:text-surface-400 break-all leading-relaxed select-all">
                 {link}
               </p>
             </div>
@@ -324,15 +335,16 @@ export default function CreatePage() {
             <button
               onClick={handleReset}
               className="mt-3 w-full py-2.5 rounded-xl text-[14px] font-medium
-                text-[#78716c] hover:text-[#1c1917] transition-colors duration-150"
+                text-[#78716c] dark:text-surface-400
+                hover:text-[#1c1917] dark:hover:text-surface-100
+                transition-colors duration-150"
             >
               Make another
             </button>
           </>
         )}
 
-        {/* Footer */}
-        <p className="mt-10 text-center text-[12px] text-[#a8a29e]">
+        <p className="mt-10 text-center text-[12px] text-[#a8a29e] dark:text-surface-500">
           Links are instant — no account needed.{" "}
           <Link href="/" className="text-[#0c87f0] hover:underline underline-offset-2">
             Try Clyde yourself →

@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon-v2.svg", type: "image/svg+xml" },
     ],
-    apple: "/apple-touch-icon.png",
+    // apple-touch-icon served dynamically from src/app/apple-icon.tsx
   },
   manifest: "/manifest.json",
   appleWebApp: {

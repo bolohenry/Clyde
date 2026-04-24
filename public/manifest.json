@@ -7,11 +7,18 @@
   "background_color": "#fafaf9",
   "theme_color": "#0c87f0",
   "orientation": "portrait",
+  "categories": ["productivity", "education"],
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/favicon-v2.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
