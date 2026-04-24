@@ -20,7 +20,7 @@ export type LinkPayload = {
 };
 
 function generateId(): string {
-  return Math.random().toString(36).slice(2, 9);
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 }
 
 // ── In-memory fallback (local dev only) ───────────────────────────────────────

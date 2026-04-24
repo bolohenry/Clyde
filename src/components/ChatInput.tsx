@@ -395,6 +395,7 @@ export default function ChatInput() {
           {attachedImage && (
             <div className="flex items-center gap-2 w-full pb-2 border-b border-[var(--surface-border)] mb-1">
               <div className="relative flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={attachedImage}
                   alt="Attached"

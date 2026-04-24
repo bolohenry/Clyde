@@ -138,7 +138,7 @@ export default function StructuredOutput({ content }: StructuredOutputProps) {
     } catch {
       setShareState("idle");
     }
-  }, [content, refinedContent, editedTexts]);
+  }, [content, refinedContent]);
 
   const handleDownloadPDF = useCallback(() => {
     track("output_downloaded_pdf", { type: content.type });

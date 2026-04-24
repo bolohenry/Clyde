@@ -273,6 +273,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           {/* Image attachment */}
           {message.imageUrl && (
             <div className="max-w-[82%] sm:max-w-[78%]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={message.imageUrl}
                 alt="Attached image"

@@ -19,6 +19,10 @@ import { checkRateLimit, getIp } from "@/lib/rateLimit";
 
 const BUCKET = "clyde-share";
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const ALLOWED_TYPES = new Set([
+  "image/jpeg", "image/png", "image/gif", "image/webp",
+  "application/pdf", "text/plain",
+]);
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,6 +60,13 @@ export async function POST(req: NextRequest) {
   if (!file) {
     return new Response(JSON.stringify({ error: "No file field" }), {
       status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (!ALLOWED_TYPES.has(file.type)) {
+    return new Response(JSON.stringify({ error: "Unsupported file type." }), {
+      status: 415,
       headers: { "Content-Type": "application/json" },
     });
   }

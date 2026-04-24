@@ -105,6 +105,9 @@ export default function CreatePage() {
       form.append("file", attached.file);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
       if (!uploadRes.ok) {
+        if (uploadRes.status === 503) {
+          throw new Error("File attachments aren't set up yet. Remove the file to create a text-only link instead.");
+        }
         const err = await uploadRes.json().catch(() => ({}));
         throw new Error(err.error || "Upload failed");
       }
@@ -123,7 +126,7 @@ export default function CreatePage() {
       if (!linkRes.ok) throw new Error("Could not create link");
       const { id } = await linkRes.json();
 
-      setLink(`${window.location.origin}/?link=${id}`);
+      setLink(`${window.location.origin}/link/${id}`);
       setCopied(false);
       setPageState("done");
     } catch (err) {
@@ -309,8 +312,9 @@ export default function CreatePage() {
               Link ready
             </h1>
             <p className="text-[#78716c] dark:text-surface-400 text-sm mb-6 leading-relaxed">
-              Send this to them. When they click it, Clyde opens
-              {attached ? " with their message and file" : " with their message"} already loaded.
+              {attached
+                ? "Send this to them. They'll see a quick preview, then Clyde opens ready to help."
+                : "Send this to them. When they click it, Clyde opens with their message already loaded."}
             </p>
 
             <div className="rounded-xl border border-[#e7e5e4] dark:border-surface-700
@@ -341,6 +345,10 @@ export default function CreatePage() {
             >
               Make another
             </button>
+
+            <p className="mt-4 text-center text-[12px] text-[#a8a29e] dark:text-surface-500">
+              Links work for 30 days · No account needed
+            </p>
           </>
         )}
 
