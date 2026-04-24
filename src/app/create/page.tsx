@@ -5,7 +5,8 @@ import Link from "next/link";
 
 const MAX_CHARS = 1500;
 const MAX_FILE_MB = 8;
-const ACCEPTED = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "text/plain"];
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPTED = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "text/plain", DOCX_TYPE];
 
 type AttachedFile = {
   file: File;
@@ -111,7 +112,7 @@ export default function CreatePage() {
         const err = await uploadRes.json().catch(() => ({}));
         throw new Error(err.error || "Upload failed");
       }
-      const { url: fileUrl, fileName } = await uploadRes.json();
+      const { url: fileUrl, fileName, extractedText } = await uploadRes.json();
 
       const linkRes = await fetch("/api/link", {
         method: "POST",
@@ -121,6 +122,7 @@ export default function CreatePage() {
           fileUrl,
           fileName,
           fileType: attached.file.type,
+          fileContent: extractedText,
         }),
       });
       if (!linkRes.ok) throw new Error("Could not create link");
@@ -274,7 +276,7 @@ export default function CreatePage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept={ACCEPTED.join(",")}
+              accept={[...ACCEPTED, ".docx"].join(",")}
               onChange={onFileChange}
               className="sr-only"
               tabIndex={-1}

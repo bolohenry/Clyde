@@ -19,9 +19,10 @@ import { checkRateLimit, getIp } from "@/lib/rateLimit";
 
 const BUCKET = "clyde-share";
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const ALLOWED_TYPES = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp",
-  "application/pdf", "text/plain",
+  "application/pdf", "text/plain", DOCX_TYPE,
 ]);
 
 function getSupabase() {
@@ -98,7 +99,20 @@ export async function POST(req: NextRequest) {
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-  return new Response(JSON.stringify({ url: data.publicUrl, fileName: file.name }), {
+  // For DOCX files, extract text so the LLM can read the content
+  let extractedText: string | undefined;
+  if (file.type === DOCX_TYPE || file.name.toLowerCase().endsWith(".docx")) {
+    try {
+      const mammoth = await import("mammoth");
+      const buf = Buffer.from(await file.arrayBuffer());
+      const result = await mammoth.extractRawText({ buffer: buf });
+      extractedText = result.value.trim().slice(0, 8000) || undefined;
+    } catch {
+      // Non-fatal — proceed without extracted text
+    }
+  }
+
+  return new Response(JSON.stringify({ url: data.publicUrl, fileName: file.name, extractedText }), {
     headers: { "Content-Type": "application/json" },
   });
 }

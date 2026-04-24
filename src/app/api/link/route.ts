@@ -17,6 +17,7 @@ export type LinkPayload = {
   fileUrl?: string;
   fileName?: string;
   fileType?: string;
+  fileContent?: string; // extracted text for non-image files (DOCX, PDF, TXT)
 };
 
 function generateId(): string {
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
     fileUrl: body.fileUrl,
     fileName: body.fileName,
     fileType: body.fileType,
+    fileContent: body.fileContent,
   };
 
   const id = generateId();

@@ -163,14 +163,22 @@ export default function Chat() {
         const res = await fetch(`/api/link?id=${linkId}`);
         if (!res.ok) return;
         const data = await res.json();
-        const { text, fileUrl, fileName } = data as {
+        const { text, fileUrl, fileType, fileName, fileContent } = data as {
           text?: string;
           fileUrl?: string;
+          fileType?: string;
           fileName?: string;
+          fileContent?: string;
         };
-        if (fileUrl) {
-          // Auto-send: user message is immediately visible with the file attached
+        if (fileUrl && fileType?.startsWith("image/")) {
+          // Image — send via vision API
           sendMessage(text?.trim() || "Can you help me with this?", fileUrl, undefined, fileName);
+        } else if (fileContent) {
+          // Non-image file with extracted text (DOCX, PDF, TXT)
+          sendMessage(text?.trim() || "Can you help me with this?", undefined, fileContent, fileName);
+        } else if (fileUrl) {
+          // File without extracted text — send filename as context
+          sendMessage(text?.trim() || `Can you help me with this file: ${fileName ?? "attachment"}?`, undefined, undefined, fileName);
         } else if (text) {
           setPendingInput(text);
         }

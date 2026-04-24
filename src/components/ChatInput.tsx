@@ -83,7 +83,20 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function FileTypeIcon({ type }: { type: string }) {
+function FileTypeIcon({ type, name }: { type: string; name?: string }) {
+  const isDocx = type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    || name?.toLowerCase().endsWith(".docx");
+  if (isDocx) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <line x1="12" y1="9" x2="8" y2="9"/>
+      </svg>
+    );
+  }
   if (type === "application/pdf") {
     return (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -192,14 +205,17 @@ export default function ChatInput() {
     }
 
     // Validate file type
+    const isDocx = file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      || file.name.toLowerCase().endsWith(".docx");
     const isSupported =
+      isDocx ||
       file.type === "application/pdf" ||
       file.type.startsWith("text/") ||
       file.type === "application/json" ||
       /\.(txt|csv|md|json|py|js|ts|jsx|tsx|html|css|yaml|yml|xml|sh|r|rb|go|java|c|cpp|cs)$/i.test(file.name);
 
     if (!isSupported) {
-      setFileError("Unsupported file type. Try a PDF, text file, CSV, or code file.");
+      setFileError("Unsupported file type. Try a PDF, Word doc, text file, CSV, or code file.");
       return;
     }
 
@@ -209,7 +225,11 @@ export default function ChatInput() {
 
     try {
       let content: string;
-      if (file.type === "application/pdf") {
+      if (isDocx) {
+        const mammoth = await import("mammoth");
+        const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        content = result.value;
+      } else if (file.type === "application/pdf") {
         content = await extractPDFText(file);
       } else {
         content = await readFileAsText(file);
@@ -432,7 +452,7 @@ export default function ChatInput() {
                   <div className="flex-shrink-0 w-9 h-9 rounded-lg
                     bg-clyde-50 dark:bg-clyde-950/40 border border-clyde-200 dark:border-clyde-800/50
                     flex items-center justify-center text-clyde-600 dark:text-clyde-400">
-                    <FileTypeIcon type={attachedFile.type} />
+                    <FileTypeIcon type={attachedFile.type} name={attachedFile.name} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-medium text-surface-700 dark:text-surface-200 truncate">
@@ -501,7 +521,7 @@ export default function ChatInput() {
               <input
                 id="file-upload"
                 type="file"
-                accept="image/*,application/pdf,.txt,.csv,.md,.json,.py,.js,.ts,.jsx,.tsx,.html,.css,.yaml,.yml"
+                accept="image/*,application/pdf,.docx,.txt,.csv,.md,.json,.py,.js,.ts,.jsx,.tsx,.html,.css,.yaml,.yml"
                 className="sr-only"
                 onChange={(e) => {
                   const file = e.target.files?.[0];

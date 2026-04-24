@@ -56,6 +56,8 @@ export default async function LinkPreviewPage({ params }: Props) {
 
   const hasFile = !!payload.fileUrl;
   const isImage = payload.fileType?.startsWith("image/");
+  const isDocx = payload.fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    || payload.fileName?.toLowerCase().endsWith(".docx");
 
   return (
     <div className="min-h-screen bg-[#fafaf9] flex flex-col items-center justify-center px-4 py-12">
@@ -95,6 +97,16 @@ export default async function LinkPreviewPage({ params }: Props) {
                     <rect x="3" y="3" width="18" height="18" rx="2"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+              ) : isDocx ? (
+                <div className="w-8 h-8 rounded-lg bg-[#e8f0fe] flex items-center justify-center flex-shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <line x1="12" y1="9" x2="8" y2="9"/>
                   </svg>
                 </div>
               ) : (
