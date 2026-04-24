@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useChatContext } from "@/context/ChatContext";
 import { useDarkMode } from "@/context/DarkModeContext";
@@ -46,6 +46,30 @@ export default function Header() {
 
   const hasStarted = state.phase !== "welcome" || state.messages.length > 0;
 
+  const handleExport = useCallback(() => {
+    const lines: string[] = [`Clyde conversation — ${new Date().toLocaleString()}\n`];
+    for (const msg of state.messages) {
+      if (msg.isDivider || msg.isInsight || msg.isTyping || msg.isError) continue;
+      const role = msg.role === "clyde" ? "Clyde" : "You";
+      if (msg.text) lines.push(`${role}: ${msg.text}`);
+      if (msg.structured) {
+        lines.push(`\n[${msg.structured.title}]`);
+        for (const item of msg.structured.items) {
+          lines.push(`  • ${item.text}`);
+          if (item.subItems?.length) item.subItems.forEach((s) => lines.push(`    - ${s}`));
+        }
+        lines.push("");
+      }
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clyde-chat-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [state.messages]);
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#1a1714]
       backdrop-blur-md dark:backdrop-blur-none border-b border-surface-100 dark:border-surface-700
@@ -78,6 +102,24 @@ export default function Header() {
             </svg>
             Let me ask Clyde
           </Link>
+
+          {hasStarted && (
+            <button
+              onClick={handleExport}
+              aria-label="Download conversation"
+              title="Download conversation"
+              className="w-8 h-8 flex items-center justify-center rounded-full
+                text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300
+                hover:bg-surface-100 dark:hover:bg-surface-700
+                transition-all duration-150"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          )}
 
           {hasStarted && (
             <button

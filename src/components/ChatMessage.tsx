@@ -31,7 +31,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isClyde = message.role === "clyde";
   const { state, retryLastMessage } = useChatContext();
   const expression = getClydeExpression(state.phase, message.isTyping);
-  const { speak, isActive, isGenerating } = useTTS(message.id);
+  const { speak, isActive, isGenerating, kokoroStatus, kokoroProgress } = useTTS(message.id);
 
   const canSpeak = isClyde && !message.isTyping && !message.isError
     && !message.isDivider && !message.isInsight && !!message.text;
@@ -193,6 +193,48 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               <SpeechTail side="left" />
             </div>
           </div>
+          {canSpeak && (
+            <button
+              onClick={() => speak(message.text)}
+              aria-label={isActive ? "Stop speaking" : "Hear this message"}
+              className={`mt-2 ml-11 sm:ml-[52px] inline-flex items-center gap-1.5
+                px-3 py-1 rounded-full text-[12px] font-medium border
+                transition-all duration-150 active:scale-95
+                ${isActive
+                  ? "text-clyde-600 dark:text-clyde-400 bg-clyde-50 dark:bg-clyde-950/40 border-clyde-200 dark:border-clyde-800"
+                  : "text-surface-500 dark:text-surface-400 bg-[var(--surface-card-alt)] border-[var(--surface-border)] hover:border-clyde-300 dark:hover:border-clyde-700 hover:text-clyde-600 dark:hover:text-clyde-300"
+                }`}
+            >
+              {isGenerating ? (
+                <>
+                  <motion.span
+                    className="w-2.5 h-2.5 rounded-full border-[1.5px] border-current border-t-transparent flex-shrink-0"
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
+                  />
+                  {kokoroStatus === "loading" && kokoroProgress > 0
+                    ? `Loading voice… ${kokoroProgress}%`
+                    : "Generating…"}
+                </>
+              ) : isActive ? (
+                <>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                  </svg>
+                  Stop
+                </>
+              ) : (
+                <>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  </svg>
+                  Hear this
+                </>
+              )}
+            </button>
+          )}
+
           {!message.isTyping && !message.isError && message.searchQuery && (
             <a
               href={`https://google.com/search?q=${encodeURIComponent(message.searchQuery)}`}

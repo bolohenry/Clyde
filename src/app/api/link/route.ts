@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { put, list } from "@vercel/blob";
+import { checkRateLimit, getIp } from "@/lib/rateLimit";
 
 /**
  * /api/link — stores and retrieves "Send to Clyde" link payloads.
@@ -29,6 +30,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`link:${getIp(req)}`, 20, 60_000)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Try again in a minute." }), {
+      status: 429, headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const body = await req.json().catch(() => null);
   if (!body?.text && !body?.fileUrl) {
     return new Response(JSON.stringify({ error: "Payload must include text or fileUrl" }), {
