@@ -47,12 +47,14 @@ export default function Header() {
   const hasStarted = state.phase !== "welcome" || state.messages.length > 0;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#1a1714]/92
-      backdrop-blur-md border-b border-surface-100 dark:border-surface-800
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#1a1714]
+      backdrop-blur-md dark:backdrop-blur-none border-b border-surface-100 dark:border-surface-700
       transition-colors duration-200">
       <div className="max-w-2xl mx-auto px-3 sm:px-4 h-12 sm:h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ClydeAvatar size="sm" expression={expression} animate={false} />
+          <div className="rounded-full dark:bg-surface-700/60 dark:ring-1 dark:ring-surface-600/40 flex-shrink-0">
+            <ClydeAvatar size="sm" expression={expression} animate={false} />
+          </div>
           <span className="text-base sm:text-lg font-semibold text-surface-800 dark:text-surface-100 tracking-tight">
             Clyde
           </span>
