@@ -5,8 +5,6 @@ import { useChatContext } from "@/context/ChatContext";
 import { generateWelcomeMessage } from "@/engine/responses";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
-import TransitionCue from "./TransitionCue";
-import ExplanationPanel from "./ExplanationPanel";
 import WhatElseCanAI from "./WhatElseCanAI";
 import Header from "./Header";
 import TypewriterMessage from "./TypewriterMessage";
@@ -97,8 +95,6 @@ export default function Chat() {
     };
   }, [
     state.messages,
-    state.showTransitionCue,
-    state.explanationVisible,
     uiPhase,
     scrollToBottom,
   ]);
@@ -189,7 +185,7 @@ export default function Chat() {
     messages: state.messages,
     phase: state.phase,
     turnCount: state.turnCount,
-    enabled: uiPhase === "chat" && !state.showTransitionCue && !state.explanationVisible,
+    enabled: uiPhase === "chat",
     delay: 10000,
   });
 
@@ -279,9 +275,6 @@ export default function Chat() {
               {!state.messages.some((m) => m.role === "user") && (
                 <StarterScenarios />
               )}
-
-              <TransitionCue />
-              <ExplanationPanel />
 
               {/* Idle nudge — Clyde speaks up after 10s of silence */}
               <AnimatePresence>

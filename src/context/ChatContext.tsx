@@ -30,8 +30,6 @@ interface ChatContextValue {
   dispatch: React.Dispatch<ChatAction>;
   sendMessage: (text: string, imageUrl?: string, fileContent?: string, fileName?: string) => void;
   selectChipAction: (action: SuggestionType) => void;
-  showExplanation: () => void;
-  tryAnotherUseCase: () => void;
   startFreeform: () => void;
   retryLastMessage: () => void;
   resetConversation: () => void;
@@ -39,8 +37,6 @@ interface ChatContextValue {
   hasSavedConversation: boolean;
   pendingInput: string;
   setPendingInput: (text: string) => void;
-  explanationContent: string | null;
-  explanationLoading: boolean;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -246,10 +242,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (parsed.structured) {
           track("structured_output_generated", { type: parsed.structured.type });
           dispatch({ type: "SET_PHASE", phase: "structured" });
-          setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 2000);
+          setTimeout(() => {
+            dispatch({ type: "SET_PHASE", phase: "flexible" });
+            dispatch({ type: "COMPLETE_FIRST_FLOW" });
+            dispatch({ type: "INCREMENT_FLOWS" });
+          }, 3000);
         } else if (shouldTransition(currentState)) {
           dispatch({ type: "SET_PHASE", phase: "transition" });
-          setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 1500);
+          setTimeout(() => {
+            dispatch({ type: "SET_PHASE", phase: "flexible" });
+            dispatch({ type: "COMPLETE_FIRST_FLOW" });
+            dispatch({ type: "INCREMENT_FLOWS" });
+          }, 2000);
         }
         processingRef.current = false;
         return;
@@ -442,7 +446,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         finishMessage(replyId, text, { structured });
         dispatch({ type: "COMPLETE_USE_CASE", action });
         maybeInjectInsight(useCaseIndexAfter);
-        setTimeout(() => dispatch({ type: "SHOW_TRANSITION_CUE", show: true }), 2000);
+        setTimeout(() => {
+          dispatch({ type: "SET_PHASE", phase: "flexible" });
+          dispatch({ type: "COMPLETE_FIRST_FLOW" });
+          dispatch({ type: "INCREMENT_FLOWS" });
+        }, 3000);
       };
 
       if (llmAvailableRef.current !== false) {
@@ -505,121 +513,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [state, dispatch, addTypingMessage, finishMessage, setMessageError, getConversationHistory, maybeInjectInsight]
   );
 
-  const showExplanation = useCallback(async () => {
-    track("explanation_viewed");
-    dispatch({ type: "SET_PHASE", phase: "explanation" });
-    dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
-    dispatch({ type: "SHOW_EXPLANATION", show: true });
-    dispatch({ type: "COMPLETE_FIRST_FLOW" });
-    dispatch({ type: "INCREMENT_FLOWS" });
-    dispatch({ type: "SET_EXPLANATION_CONTENT", content: "" });
-    dispatch({ type: "SET_EXPLANATION_LOADING", loading: true });
-
-    try {
-      const res = await fetch("/api/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationHistory: getConversationHistory(),
-          action: state.selectedAction || "plan",
-          userContext: state.userContext,
-        }),
-      });
-
-      if (!res.ok || !res.body) {
-        dispatch({ type: "SET_EXPLANATION_LOADING", loading: false });
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let accumulated = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          try {
-            const event = JSON.parse(raw);
-            if (event.type === "delta" && event.text) {
-              accumulated += event.text;
-              dispatch({ type: "SET_EXPLANATION_CONTENT", content: accumulated });
-            }
-          } catch { continue; }
-        }
-      }
-    } finally {
-      dispatch({ type: "SET_EXPLANATION_LOADING", loading: false });
-    }
-  }, [dispatch, getConversationHistory, state.selectedAction, state.userContext]);
-
-  const tryAnotherUseCase = useCallback(async () => {
-    track("try_another_use_case");
-    dispatch({ type: "SET_PHASE", phase: "flexible" });
-    dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
-    dispatch({ type: "SHOW_EXPLANATION", show: false });
-    dispatch({ type: "COMPLETE_FIRST_FLOW" });
-    dispatch({ type: "INCREMENT_FLOWS" });
-
-    const replyId = nextMsgId();
-    lastReplyIdRef.current = replyId;
-    addTypingMessage(replyId);
-
-    if (llmAvailableRef.current !== false) {
-      const history = getConversationHistory();
-      history.push({
-        role: "user",
-        content:
-          "[New topic. Ask the user warmly what else they've got going on. One sentence, no more.]",
-      });
-      lastHistoryRef.current = history;
-
-      const llmResult = await streamLLM(
-        history,
-        (accumulated) => {
-          dispatch({
-            type: "UPDATE_MESSAGE",
-            id: replyId,
-            updates: { text: accumulated, isTyping: false },
-          });
-        },
-        (code, message) => {
-          if (code === "no_api_key") {
-            llmAvailableRef.current = false;
-          } else {
-            setMessageError(replyId, code, message);
-          }
-        }
-      );
-
-      if (llmResult) {
-        llmAvailableRef.current = true;
-        finishMessage(replyId, llmResult.trim());
-        return;
-      }
-
-      // onError callback may have set this to false — re-check
-      if ((llmAvailableRef.current as boolean | null) !== false) return;
-    }
-
-    setTimeout(() => {
-      finishMessage(
-        replyId,
-        "Nice — you've got the hang of it. What else do you have going on? I can help with pretty much anything: planning, deciding, drafting, organizing, comparing options... just tell me what's on your mind."
-      );
-    }, 800);
-  }, [dispatch, addTypingMessage, finishMessage, setMessageError, getConversationHistory]);
-
   const startFreeform = useCallback(() => {
     dispatch({ type: "SET_PHASE", phase: "flexible" });
-    dispatch({ type: "SHOW_TRANSITION_CUE", show: false });
   }, [dispatch]);
 
   const resetConversation = useCallback(() => {
@@ -637,8 +532,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         dispatch,
         sendMessage,
         selectChipAction,
-        showExplanation,
-        tryAnotherUseCase,
         startFreeform,
         retryLastMessage,
         resetConversation,
@@ -646,8 +539,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         hasSavedConversation,
         pendingInput,
         setPendingInput,
-        explanationContent: state.explanationContent,
-        explanationLoading: state.explanationLoading,
       }}
     >
       {children}
