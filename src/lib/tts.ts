@@ -1,17 +1,74 @@
 /**
- * TTS singleton — Kokoro model loader, smart browser voice picker,
- * and global audio coordinator.
+ * TTS singleton — OpenAI TTS (primary), Kokoro WASM (fallback),
+ * browser speechSynthesis (last resort).
  *
  * Call speakText(text, id) from anywhere.
  * Subscribe to subscribeCurrentSpeaking() to know which message is active.
  */
 
-// ── Local type (avoids static import of kokoro-js which pulls onnxruntime-node) ──
+// ── Markdown stripper ─────────────────────────────────────────────────────────
+// Removes formatting chars that sound bad when read aloud ("asterisk asterisk…")
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")   // **bold**
+    .replace(/\*(.+?)\*/g, "$1")        // *italic*
+    .replace(/`{1,3}[^`]*`{1,3}/g, "") // `code` / ```blocks```
+    .replace(/#+\s/g, "")               // ## headings
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [links](url)
+    .replace(/^\s*[-*+]\s/gm, "")       // - list items
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// ── OpenAI TTS ────────────────────────────────────────────────────────────────
+
+let _openaiAvailable: boolean | null = null; // null=unknown, true=works, false=not configured
+
+async function _speakWithOpenAI(text: string, messageId: string): Promise<boolean> {
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: stripMarkdown(text) }),
+    });
+
+    if (res.status === 503) {
+      _openaiAvailable = false;
+      return false;
+    }
+    if (!res.ok) return false;
+
+    _openaiAvailable = true;
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentAudio = audio;
+
+    // May have been cancelled while we waited for the API
+    if (!_speaker || _speaker.id !== messageId) {
+      URL.revokeObjectURL(url);
+      return false;
+    }
+
+    audio.onplay  = () => _setSpeaker({ id: messageId, phase: "playing" });
+    audio.onended = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+    audio.onerror = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+
+    await audio.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── Kokoro loader (fallback) ──────────────────────────────────────────────────
+// Local type avoids static import of kokoro-js which pulls onnxruntime-node
+
 interface KokoroInstance {
   generate(text: string, opts?: { voice?: string; speed?: number }): Promise<{ toBlob(): Blob }>;
 }
-
-// ── Kokoro loader ─────────────────────────────────────────────────────────────
 
 export type KokoroStatus = "idle" | "loading" | "ready" | "failed";
 
@@ -54,7 +111,7 @@ export async function loadKokoro(): Promise<KokoroInstance | null> {
       _notifyKokoro();
       return _kokoroInstance;
     } catch (err) {
-      console.warn("[Clyde TTS] Kokoro unavailable — using browser voice.", err);
+      console.warn("[Clyde TTS] Kokoro unavailable.", err);
       _kokoroStatus = "failed";
       _notifyKokoro();
       return null;
@@ -62,6 +119,25 @@ export async function loadKokoro(): Promise<KokoroInstance | null> {
   })();
 
   return _kokoroPromise;
+}
+
+async function _speakWithKokoro(text: string, messageId: string): Promise<boolean> {
+  if (!_kokoroInstance) return false;
+  try {
+    const result = await _kokoroInstance.generate(stripMarkdown(text), { voice: "af_nova" });
+    const blob = result.toBlob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentAudio = audio;
+    audio.onplay  = () => _setSpeaker({ id: messageId, phase: "playing" });
+    audio.onended = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+    audio.onerror = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+    await audio.play();
+    return true;
+  } catch {
+    _setSpeaker(null);
+    return false;
+  }
 }
 
 // ── Smart browser voice picker ────────────────────────────────────────────────
@@ -88,7 +164,6 @@ export function getBestBrowserVoice(): SpeechSynthesisVoice | null {
 }
 
 // ── Current-speaker tracking ──────────────────────────────────────────────────
-// "generating" = Kokoro is rendering audio, "playing" = audio is audible
 
 export type SpeakerState = { id: string; phase: "generating" | "playing" } | null;
 
@@ -118,25 +193,6 @@ export function stopAllAudio() {
 
 // ── Main speak API ────────────────────────────────────────────────────────────
 
-async function _speakWithKokoro(text: string, messageId: string): Promise<boolean> {
-  if (!_kokoroInstance) return false;
-  try {
-    const result = await _kokoroInstance.generate(text, { voice: "af_nova" });
-    const blob = result.toBlob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    _currentAudio = audio;
-    audio.onplay = () => _setSpeaker({ id: messageId, phase: "playing" });
-    audio.onended = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
-    audio.onerror = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
-    await audio.play();
-    return true;
-  } catch {
-    _setSpeaker(null);
-    return false;
-  }
-}
-
 export async function speakText(text: string, messageId: string): Promise<void> {
   if (!text.trim()) return;
 
@@ -144,45 +200,45 @@ export async function speakText(text: string, messageId: string): Promise<void> 
   if (_speaker?.id === messageId) { stopAllAudio(); return; }
 
   stopAllAudio();
+  _setSpeaker({ id: messageId, phase: "generating" });
 
-  // Kokoro ready — use it directly
-  if (_kokoroStatus === "ready" && _kokoroInstance) {
-    _setSpeaker({ id: messageId, phase: "generating" });
-    const ok = await _speakWithKokoro(text, messageId);
-    if (!ok) _speakWithBrowser(text, messageId);
-    return;
+  // 1. OpenAI TTS — best quality, server-side
+  if (_openaiAvailable !== false) {
+    const ok = await _speakWithOpenAI(text, messageId);
+    if (ok) return;
+    // If _openaiAvailable is now false, key not configured — fall through
   }
 
-  // Kokoro loading — wait for it so the user gets the good voice
-  // The "Hear this" button shows progress % while waiting
+  // 2. Kokoro — local WASM, good quality
+  if (_kokoroStatus === "ready" && _kokoroInstance) {
+    const ok = await _speakWithKokoro(text, messageId);
+    if (ok) return;
+  }
+
+  // Kokoro loading — wait for it
   if (_kokoroStatus === "loading" && _kokoroPromise) {
-    _setSpeaker({ id: messageId, phase: "generating" });
     const kokoro = await _kokoroPromise;
-    // User may have cancelled (tapped Stop) while we waited
     if (!_speaker || _speaker.id !== messageId) return;
     if (kokoro) {
       const ok = await _speakWithKokoro(text, messageId);
       if (ok) return;
     }
-    // Kokoro failed — fall through to browser voice
-    _setSpeaker(null);
-    _speakWithBrowser(text, messageId);
-    return;
   }
 
-  // Kokoro idle or permanently failed — use browser voice
+  // 3. Browser speech synthesis — last resort
+  _setSpeaker(null);
   _speakWithBrowser(text, messageId);
   if (_kokoroStatus === "idle") loadKokoro();
 }
 
 function _speakWithBrowser(text: string, messageId: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text);
+  const utterance = new SpeechSynthesisUtterance(stripMarkdown(text));
   const voice = getBestBrowserVoice();
   if (voice) utterance.voice = voice;
   utterance.rate = 0.95;
   utterance.onstart = () => _setSpeaker({ id: messageId, phase: "playing" });
-  utterance.onend = () => _setSpeaker(null);
+  utterance.onend   = () => _setSpeaker(null);
   utterance.onerror = () => _setSpeaker(null);
   window.speechSynthesis.speak(utterance);
 }
