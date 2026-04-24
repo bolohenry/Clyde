@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
+import PostHogProvider from "@/providers/PostHogProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -65,13 +65,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <Script
-        defer
-        data-domain={process.env.NEXT_PUBLIC_SITE_DOMAIN || "clyde.app"}
-        src="https://plausible.io/js/script.js"
-        strategy="afterInteractive"
-      />
-      <body className="min-h-screen bg-[var(--surface-page)] antialiased">{children}</body>
+      <body className="min-h-screen bg-[var(--surface-page)] antialiased">
+        <PostHogProvider>{children}</PostHogProvider>
+      </body>
     </html>
   );
 }

@@ -8,6 +8,7 @@ import StructuredOutput from "./StructuredOutput";
 import ClydeAvatar from "./ClydeAvatar";
 import { useChatContext } from "@/context/ChatContext";
 import { useTTS } from "@/hooks/useTTS";
+import { track } from "@/lib/analytics";
 
 const ERROR_LABELS: Record<NonNullable<Message["errorCode"]>, string> = {
   rate_limit: "Rate limit hit — wait a moment then retry.",
@@ -195,7 +196,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </div>
           {canSpeak && (
             <button
-              onClick={() => speak(message.text)}
+              onClick={() => { if (!isActive) track("tts_used"); speak(message.text); }}
               aria-label={isActive ? "Stop speaking" : "Hear this message"}
               className={`mt-2 ml-11 sm:ml-[52px] inline-flex items-center gap-1.5
                 px-3 py-1 rounded-full text-[12px] font-medium border

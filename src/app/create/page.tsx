@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 
 const MAX_CHARS = 1500;
 const MAX_FILE_MB = 8;
@@ -91,6 +92,7 @@ export default function CreatePage() {
     if (!canSubmit) return;
 
     if (!attached) {
+      track("link_created", { has_file: false });
       const encoded = encodeURIComponent(text.trim());
       setLink(`${window.location.origin}/?ask=${encoded}`);
       setCopied(false);
@@ -128,6 +130,7 @@ export default function CreatePage() {
       if (!linkRes.ok) throw new Error("Could not create link");
       const { id } = await linkRes.json();
 
+      track("link_created", { has_file: true, file_type: attached.file.type });
       setLink(`${window.location.origin}/link/${id}`);
       setCopied(false);
       setPageState("done");
