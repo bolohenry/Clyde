@@ -118,6 +118,25 @@ export function stopAllAudio() {
 
 // ── Main speak API ────────────────────────────────────────────────────────────
 
+async function _speakWithKokoro(text: string, messageId: string): Promise<boolean> {
+  if (!_kokoroInstance) return false;
+  try {
+    const result = await _kokoroInstance.generate(text, { voice: "af_nova" });
+    const blob = result.toBlob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentAudio = audio;
+    audio.onplay = () => _setSpeaker({ id: messageId, phase: "playing" });
+    audio.onended = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+    audio.onerror = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
+    await audio.play();
+    return true;
+  } catch {
+    _setSpeaker(null);
+    return false;
+  }
+}
+
 export async function speakText(text: string, messageId: string): Promise<void> {
   if (!text.trim()) return;
 
@@ -126,28 +145,32 @@ export async function speakText(text: string, messageId: string): Promise<void> 
 
   stopAllAudio();
 
+  // Kokoro ready — use it directly
   if (_kokoroStatus === "ready" && _kokoroInstance) {
     _setSpeaker({ id: messageId, phase: "generating" });
-    try {
-      const result = await _kokoroInstance.generate(text, { voice: "af_heart" });
-      const blob = result.toBlob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      _currentAudio = audio;
-
-      audio.onplay = () => _setSpeaker({ id: messageId, phase: "playing" });
-      audio.onended = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
-      audio.onerror = () => { _setSpeaker(null); URL.revokeObjectURL(url); _currentAudio = null; };
-
-      await audio.play();
-    } catch {
-      _setSpeaker(null);
-      _speakWithBrowser(text, messageId);
-    }
+    const ok = await _speakWithKokoro(text, messageId);
+    if (!ok) _speakWithBrowser(text, messageId);
     return;
   }
 
-  // Browser voice (also kick off Kokoro loading for next time)
+  // Kokoro loading — wait for it so the user gets the good voice
+  // The "Hear this" button shows progress % while waiting
+  if (_kokoroStatus === "loading" && _kokoroPromise) {
+    _setSpeaker({ id: messageId, phase: "generating" });
+    const kokoro = await _kokoroPromise;
+    // User may have cancelled (tapped Stop) while we waited
+    if (!_speaker || _speaker.id !== messageId) return;
+    if (kokoro) {
+      const ok = await _speakWithKokoro(text, messageId);
+      if (ok) return;
+    }
+    // Kokoro failed — fall through to browser voice
+    _setSpeaker(null);
+    _speakWithBrowser(text, messageId);
+    return;
+  }
+
+  // Kokoro idle or permanently failed — use browser voice
   _speakWithBrowser(text, messageId);
   if (_kokoroStatus === "idle") loadKokoro();
 }

@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useIdleNudge } from "@/hooks/useIdleNudge";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
-import { speakText } from "@/lib/tts";
+import { speakText, loadKokoro } from "@/lib/tts";
 
 export default function Chat() {
   const { state, dispatch, sendMessage, resetConversation, hasSavedConversation, setPendingInput } = useChatContext();
@@ -122,6 +122,12 @@ export default function Chat() {
   // Keep app container sized to the visual viewport so the input bar stays
   // above the soft keyboard on iOS Safari and Android Chrome
   useVisualViewport();
+
+  // Eagerly preload Kokoro voice model as soon as chat is visible —
+  // this way it's ready (or nearly ready) by the time the user taps "Hear this"
+  useEffect(() => {
+    if (uiPhase === "chat") loadKokoro();
+  }, [uiPhase]);
 
   // Auto-play: speak new Clyde messages as they arrive
   const { autoPlay } = useAutoPlay();
